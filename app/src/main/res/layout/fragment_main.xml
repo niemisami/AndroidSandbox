@@ -1,0 +1,20 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.niemisami.androidsandbox.MainFragment"
+    android:orientation="vertical">
+
+    <include layout="@layout/toolbar" />
+
+
+    <TextView
+        android:layout_gravity="center"
+        android:layout_margin="@dimen/margin_large"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/getting_started"
+        android:textSize="@dimen/text_large"
+        android:fontFamily="sans-serif-light"/>
+
+</LinearLayout>
