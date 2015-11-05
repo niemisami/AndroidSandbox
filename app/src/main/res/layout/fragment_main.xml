@@ -28,14 +28,14 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="Database" />
+            android:text="@string/db_button" />
 
         <Button
             android:id="@+id/bluetoothButton"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="Bluetooth" />
+            android:text="@string/bt_button" />
     </LinearLayout>
 
     <LinearLayout
@@ -49,13 +49,13 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="Graph" />
+            android:text="@string/graph_button" />
 
         <Button
-            android:id="@+id/someButton"
+            android:id="@+id/webButton"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="Empty"/>
+            android:text="@string/web_button"/>
     </LinearLayout>
 </LinearLayout>

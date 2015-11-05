@@ -9,6 +9,14 @@
     <string name="welcome">Welcome</string>
     <string name="getting_started">Let\'s Get Started</string>
 
-<!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <!-- Database strings-->
+    <string name="title_activity_database">Database</string>
+    <string name="db_intro">Testing the performance of SQLite database.\nSave data from text boxes or raw data</string>
+
+    <!-- Main view button-->
+    <string name="bt_button">Bluetooth</string>
+    <string name="db_button">SQLite database</string>
+    <string name="graph_button">Graph</string>
+    <string name="web_button">Web</string>
+
 </resources>
