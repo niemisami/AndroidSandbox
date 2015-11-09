@@ -46,7 +46,7 @@ public class DatabaseFragment extends Fragment {
 //        Find toolbar from the view and set it to support actionbar
 //        This can be set into the activity if menu items doesn't change even if fragments does
         setHasOptionsMenu(true);
-        AppCompatActivity appCompatActivity = (AppCompatActivity)getActivity();
+        AppCompatActivity appCompatActivity = (AppCompatActivity) getActivity();
         mToolBar = (Toolbar) view.findViewById(R.id.toolbar);
         mToolBar.setTitle(TAG);
         appCompatActivity.setSupportActionBar(mToolBar);
@@ -75,6 +75,7 @@ public class DatabaseFragment extends Fragment {
     @Override
     public void onPause() {
         getActivity().stopService(mServiceIntent);
+        mHandler.removeCallbacksAndMessages(null);
         super.onPause();
     }
 
@@ -98,23 +99,26 @@ public class DatabaseFragment extends Fragment {
 //    endregion
 
 
-
     private class ServiceMessageHandler extends Handler {
         public void handleMessage(Message msg) {
-            if (msg.arg1 == 1) {
-                Toast.makeText(getActivity().getApplicationContext(), "Sensors are running", Toast.LENGTH_SHORT)
-                        .show();
-            } else if (msg.arg1 == 0) {
-                Bundle data = msg.getData();
-                int readingAmount = data.getInt(SensorService.SENSOR_VALUES);
-                Toast.makeText(getActivity().getApplicationContext(), "Sensors stopped with " + readingAmount + " reading" , Toast.LENGTH_SHORT)
-                        .show();
-            } else {
-                Toast.makeText(getActivity().getApplicationContext(), "Something went wrong" , Toast.LENGTH_SHORT)
-                        .show();
+            if (getActivity() != null) {
+                if (msg.arg1 == 1) {
+                    Toast.makeText(getActivity().getApplicationContext(), "Sensors are running", Toast.LENGTH_SHORT)
+                            .show();
+                } else if (msg.arg1 == 0) {
+                    Bundle data = msg.getData();
+                    int readingAmount = data.getInt(SensorService.SENSOR_VALUES);
+                    Toast.makeText(getActivity().getApplicationContext(), "Sensors stopped with " + readingAmount + " reading", Toast.LENGTH_SHORT)
+                            .show();
+                } else {
+                    Toast.makeText(getActivity().getApplicationContext(), "Something went wrong", Toast.LENGTH_SHORT)
+                            .show();
+                }
             }
 
         }
-    };
+    }
+
+    ;
 
 }

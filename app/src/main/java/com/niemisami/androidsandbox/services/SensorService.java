@@ -59,9 +59,16 @@ public class SensorService extends Service {
 
     @Override
     public void onDestroy() {
+        super.onDestroy();
+        Log.d(TAG, "service on destroy");
+        Message msg = mServiceHandler.obtainMessage();
+        Bundle bundle = new Bundle();
+        bundle.putInt(SENSOR_COMMAND, STOP_SENSORS);
+        msg.setData(bundle);
+        mServiceHandler.sendMessage(msg);
+
         mServiceHandler.removeCallbacksAndMessages(null);
         mServiceLooper.quit();
-        super.onDestroy();
     }
 
     @Override
@@ -91,7 +98,7 @@ public class SensorService extends Service {
     ////SERVICE BACKGROUND THREAD/////
 
     //    region
-    private final class ServiceHandler extends Handler implements SensorEventListener  {
+    private final class ServiceHandler extends Handler implements SensorEventListener {
 
 
         private int serviceId;
@@ -101,7 +108,7 @@ public class SensorService extends Service {
         private SensorManager mSensorManager;
         private final int mSensorDelay = 0;
 
-//        Status 1 when started
+        //        Status 1 when started
 //        Status 0 when stopping
 //        Status -1 error
         private int status;
@@ -122,7 +129,7 @@ public class SensorService extends Service {
             Bundle bundle = msg.getData();
 
             command = bundle.getInt(SENSOR_COMMAND);
-            if(command == START_SENSORS) {
+            if (command == START_SENSORS) {
 
 //                Save information about service where thread is started and intent containing
 //                messenger
@@ -131,11 +138,9 @@ public class SensorService extends Service {
                 mMessenger = (Messenger) intent.getExtras().get("MESSENGER");
 
                 startSensors();
-            } else if(command == STOP_SENSORS) {
+            } else if (command == STOP_SENSORS) {
                 stopSensors();
             }
-
-
         }
 
 
@@ -152,12 +157,9 @@ public class SensorService extends Service {
 
             Log.d(TAG, "Sensors Stopped");
             mSensorManager.unregisterListener(this);
-
             status = 0;
             sendResultToClient(status);
             stopSelf(serviceId);
-
-
         }
 
         private void sendResultToClient(int result) {
@@ -167,16 +169,16 @@ public class SensorService extends Service {
 
             statusMessage.arg1 = result;
 
-            if(result == 0) {
+            if (result == 0) {
                 Bundle b = new Bundle();
                 b.putInt(SENSOR_VALUES, accAmount);
                 statusMessage.setData(b);
             }
-
             try {
                 mMessenger.send(statusMessage);
+
             } catch (RemoteException e) {
-                Log.e(TAG, "Error in service's background thread",e);
+                Log.e(TAG, "Error in service's background thread", e);
             }
         }
 
@@ -193,7 +195,7 @@ public class SensorService extends Service {
                     gyroAmount--;
                     break;
             }
-            if(accAmount > 1000) {
+            if (accAmount > 1000) {
                 stopSensors();
             }
 
@@ -207,7 +209,6 @@ public class SensorService extends Service {
     }
 
 //    endregion
-
 
 
 }
