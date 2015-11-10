@@ -235,8 +235,6 @@ public class SensorService extends Service {
         @Override
         public void onAccuracyChanged(Sensor sensor, int accuracy) {
         }
-
-
     }
 
 //    endregion

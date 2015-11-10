@@ -2,6 +2,7 @@
     <string name="app_name">AndroidSandbox</string>
     <string name="cancel">Cancel</string>
     <string name="start">Start</string>
+    <string name="save">Save</string>
     <string name="stop">Stop</string>
     <string name="new_text">New</string>
     <string name="remove">Remove</string>
@@ -12,6 +13,11 @@
     <!-- Database strings-->
     <string name="title_activity_database">Database</string>
     <string name="db_intro">Testing the performance of SQLite database.\nSave data from text boxes or raw data</string>
+    <string name="name">Name</string>
+    <string name="additional_info">Notes</string>
+    <string name="start_sensor">Start Sensor</string>
+    <string name="stop_sensor">Stop Sensor</string>
+
 
     <!-- Main view button-->
     <string name="bt_button">Bluetooth</string>
@@ -19,4 +25,5 @@
     <string name="graph_button">Graph</string>
     <string name="web_button">Web</string>
 
+    <string name="lorem">Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Sed posuere interdum sem. Quisque ligula eros ullamcorper quis, lacinia quis facilisis sed sapien. Mauris varius diam vitae arcu. Sed arcu lectus auctor vitae, consectetuer et venenatis eget velit. Sed augue orci, lacinia eu tincidunt et eleifend nec lacus. Donec ultricies nisl ut felis, suspendisse potenti. Lorem ipsum ligula ut hendrerit mollis, ipsum erat vehicula risus, eu suscipit sem libero nec erat. Aliquam erat volutpat. Sed congue augue vitae neque. Nulla consectetuer porttitor pede. Fusce purus morbi tortor magna condimentum vel, placerat id blandit sit amet tortor.</string>
 </resources>

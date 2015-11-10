@@ -1,18 +1,69 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/databaseFragment"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:id="@+id/databaseFragment"
-    tools:context="com.niemisami.androidsandbox.DatabaseFragment"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    tools:context="com.niemisami.androidsandbox.DatabaseFragment">
 
     <include layout="@layout/toolbar" />
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/db_intro"/>
+        android:layout_margin="@dimen/margin_small"
+        android:fontFamily="sans-serif-light"
+        android:gravity="center"
+        android:text="@string/db_intro"
+        android:textColor="@color/dark_black" />
+
+    <EditText
+        android:id="@+id/name_text_box"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/margin_medium"
+        android:hint="@string/name"
+        android:textSize="@dimen/text_normal" />
+
+    <EditText
+        android:id="@+id/info_text_box"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/margin_medium"
+        android:hint="@string/additional_info"
+        android:textSize="@dimen/text_normal" />
 
 
+    <ScrollView
+        android:id="@+id/verbose_scroll"
+        android:layout_width="match_parent"
+        android:layout_height="160dp"
+        android:padding="@dimen/margin_small">
+
+        <TextView
+            android:id="@+id/verbose_box"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            tools:text="@string/lorem" />
+    </ScrollView>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <Button
+            android:id="@+id/save_information_button"
+            android:layout_width="180dp"
+            android:layout_height="wrap_content"
+            android:text="@string/save" />
+
+        <Button
+            android:id="@+id/start_sensor_button"
+            android:layout_width="180dp"
+            android:layout_height="wrap_content"
+            android:text="@string/start_sensor" />
+    </LinearLayout>
 
 </LinearLayout>
