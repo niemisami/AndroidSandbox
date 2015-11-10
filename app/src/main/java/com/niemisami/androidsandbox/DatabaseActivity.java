@@ -1,8 +1,10 @@
 package com.niemisami.androidsandbox;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
+import android.view.View;
 
 public class DatabaseActivity extends AppCompatActivity {
 
@@ -11,6 +13,12 @@ public class DatabaseActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_database);
         inflateFragments();
+        findViewById(R.id.databaseContainer).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(DatabaseActivity.this, MainActivity.class));
+            }
+        });
     }
 
 

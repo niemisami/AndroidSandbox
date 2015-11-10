@@ -27,11 +27,21 @@ public class SensorService extends Service {
     private volatile ServiceHandler mServiceHandler;
 
 
-    private final int START_SENSORS = 1;
-    private final int STOP_SENSORS = 0;
+    /////KEY VALUES/////
+    public static final int STOP_SENSORS = 0;
+    public static final int START_SENSORS = 1;
+    public static final int SENSOR_ERROR = -1;
+    public static final int SENSOR_ACC = 2;
+    public static final int SENSOR_GYRO = 3;
+
     private final String SENSOR_COMMAND = "SENSOR_COMMAND";
     public static final String STATUS = "STATUS";
     public static final String SENSOR_VALUES = "SENSOR_VALUES";
+    public static final String SENSOR_TYPE = "SENSOR_TYPE";
+    public static final String SENSOR_X = "SENSOR_X";
+    public static final String SENSOR_Y = "SENSOR_Y";
+    public static final String SENSOR_Z = "SENSOR_Z";
+    public static final String SENSOR_TIMESTAMP = "SENSOR_TIMESTAMP";
 
 
     public SensorService() {
@@ -65,8 +75,7 @@ public class SensorService extends Service {
         Bundle bundle = new Bundle();
         bundle.putInt(SENSOR_COMMAND, STOP_SENSORS);
         msg.setData(bundle);
-        mServiceHandler.sendMessage(msg);
-
+        mServiceHandler.stopSensors();
         mServiceHandler.removeCallbacksAndMessages(null);
         mServiceLooper.quit();
     }
@@ -96,7 +105,6 @@ public class SensorService extends Service {
 
 
     ////SERVICE BACKGROUND THREAD/////
-
     //    region
     private final class ServiceHandler extends Handler implements SensorEventListener {
 
@@ -108,10 +116,6 @@ public class SensorService extends Service {
         private SensorManager mSensorManager;
         private final int mSensorDelay = 0;
 
-        //        Status 1 when started
-//        Status 0 when stopping
-//        Status -1 error
-        private int status;
         private int command;
 
         private List<Float> accArray;
@@ -137,28 +141,31 @@ public class SensorService extends Service {
                 Intent intent = (Intent) msg.obj;
                 mMessenger = (Messenger) intent.getExtras().get("MESSENGER");
 
-                startSensors();
-            } else if (command == STOP_SENSORS) {
-                stopSensors();
+                post(SensorRunnable);
             }
         }
 
-
         private void startSensors() {
-
             Log.d(TAG, "Sensors Started");
-            mSensorManager.registerListener(this, mAccSensor, mSensorDelay, 0);
-            mSensorManager.registerListener(this, mGyroSensor, mSensorDelay, 0);
-            status = 1;
-            sendResultToClient(status);
+            mSensorManager.registerListener(this, mAccSensor, mSensorDelay);
+            mSensorManager.registerListener(this, mGyroSensor, mSensorDelay);
+            sendResultToClient(START_SENSORS);
         }
+
+        /**Runnable to read sensor data and send it back to the target*/
+        private Runnable SensorRunnable = new Runnable() {
+            @Override
+            public void run() {
+                startSensors();
+            }
+        };
 
         private void stopSensors() {
 
             Log.d(TAG, "Sensors Stopped");
             mSensorManager.unregisterListener(this);
-            status = 0;
-            sendResultToClient(status);
+            sendResultToClient(STOP_SENSORS);
+            removeCallbacks(SensorRunnable);
             stopSelf(serviceId);
         }
 
@@ -182,20 +189,44 @@ public class SensorService extends Service {
             }
         }
 
+        /**Sends x, y, z and timestamp back to the handler in target.
+         * Message arg1 contains sensor type identifier, 2: acc, 3: gyro*/
+        private void sendSensorData(int sensorType, float x, float y, float z, long timestamp) {
+
+            Message msg = Message.obtain();
+            if(sensorType == Sensor.TYPE_ACCELEROMETER) msg.arg1 = SENSOR_ACC;
+            else if(sensorType == Sensor.TYPE_GYROSCOPE) msg.arg1 = SENSOR_GYRO;
+
+            Bundle bundle = new Bundle();
+            bundle.putFloat(SENSOR_X, x);
+            bundle.putFloat(SENSOR_Y, y);
+            bundle.putFloat(SENSOR_Z, z);
+            bundle.putLong(SENSOR_TIMESTAMP, timestamp);
+            msg.setData(bundle);
+
+            try {
+                mMessenger.send(msg);
+            } catch (RemoteException e) {
+                Log.e(TAG, "Error sending sensor data", e);
+            }
+        }
+
+
         ////SENSOR READING////
         @Override
         public void onSensorChanged(SensorEvent event) {
 
-
             switch (event.sensor.getType()) {
                 case Sensor.TYPE_ACCELEROMETER:
+                    sendSensorData(Sensor.TYPE_ACCELEROMETER, event.values[0], event.values[1], event.values[2], event.timestamp);
                     accAmount++;
                     break;
                 case Sensor.TYPE_GYROSCOPE:
+                    sendSensorData(Sensor.TYPE_GYROSCOPE, event.values[0], event.values[1], event.values[2], event.timestamp);
                     gyroAmount--;
                     break;
             }
-            if (accAmount > 1000) {
+            if (accAmount > 5000) {
                 stopSensors();
             }
 
