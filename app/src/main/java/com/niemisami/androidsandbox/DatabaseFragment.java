@@ -57,6 +57,18 @@ public class DatabaseFragment extends Fragment {
     private List<Long> mGyroTimestamp;
 
 
+    private final int arraySize = 100;
+    private float[] mAccZarray = new float[arraySize];
+    private float[] mAccXarray = new float[arraySize];
+    private float[] mAccYarray = new float[arraySize];
+    private long[]mAccTimestampArray = new long[arraySize];
+    private float[] mGyroZarray = new float[arraySize];
+    private float[] mGyroXarray = new float[arraySize];
+    private float[] mGyroYarray = new float[arraySize];
+    private long []mGyroTimestampArray = new long[arraySize];
+
+    private boolean mSensorsRunning = false;
+
     private Button mSaveReadingInfoButton, mStartStopSensorsButton;
     private TextView mVerboseTextView;
     private EditText mNameEditText, mInfoEditText;
@@ -130,7 +142,6 @@ public class DatabaseFragment extends Fragment {
 
     @Override
     public void onPause() {
-//        getActivity().stopService(mServiceIntent);
         mHandler.removeCallbacksAndMessages(null);
         super.onPause();
     }
@@ -170,12 +181,22 @@ public class DatabaseFragment extends Fragment {
             public void onClick(View v) {
                 start = System.currentTimeMillis();
                 saveReadingInformation();
+
             }
         });
         mStartStopSensorsButton = (Button) view.findViewById(R.id.start_sensor_button);
         mStartStopSensorsButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
+                if(mSensorsRunning) {
+                    stopSensorService();
+                    mSensorsRunning = !mSensorsRunning;
+                } else {
+                    startSensorService();
+                    mSensorsRunning = !mSensorsRunning;
+                }
+                mStartStopSensorsButton.setText((mSensorsRunning ? "Stop" : "Start"));
                 printDBData();
             }
         });
@@ -189,6 +210,10 @@ public class DatabaseFragment extends Fragment {
         mVerboseScrollView = (ScrollView) view.findViewById(R.id.verbose_scroll);
     }
 
+    private void stopSensorService() {
+
+        getActivity().stopService(mServiceIntent);
+    }
     private void saveReadingInformation() {
         String name = mNameEditText.getText().toString().trim();
         String notes = mInfoEditText.getText().toString().trim();
@@ -214,15 +239,17 @@ public class DatabaseFragment extends Fragment {
             mVerboseTextView.append("data: " + r.getId() + " name: " + r.getPatientName() + " time: " + r.getStartTime() + "\n");
         }
 
+        printSensorStatus();
         mVerboseScrollView.post(new Runnable() {
             @Override
             public void run() {
                 mVerboseScrollView.fullScroll(View.FOCUS_DOWN);
             }
         });
+    }
 
-
-
+    private void printSensorStatus() {
+        mVerboseTextView.append("is sensors running " + mSensorsRunning);
     }
 
 //    endregion
@@ -238,8 +265,7 @@ public class DatabaseFragment extends Fragment {
         @Override
         protected Integer doInBackground(Reading... params) {
             Log.d(TAG, "starting save " + (System.currentTimeMillis() - start));
-//            mDatabaseManager.insertReadingToDB(params[0]);
-            mDatabaseManager.addsensor(1, 4.22f, 9.33f, 2.00f, 14000000 );
+            mDatabaseManager.insertReadingToDB(params[0]);
             Log.d(TAG, "Saved " + (System.currentTimeMillis() - start));
 
             return null;
@@ -256,6 +282,43 @@ public class DatabaseFragment extends Fragment {
         }
     }
 
+    /**Async task that puts array values to tmp arrays which are sent to the database*/
+    private class SensorAddingAsyncTask extends AsyncTask<Integer, Integer, Integer> {
+
+        float[] tmpAccZarray;
+        float[] tmpAccXarray;
+        float[] tmpAccYarray;
+        long[]tmpAccTimestampArray;
+        float[] tmpGyroZarray;
+        float[] tmpGyroXarray;
+        float[] tmpGyroYarray;
+        long [] tmpGyroTimestampArray;
+
+        @Override
+        protected Integer doInBackground(Integer... params) {
+            mDatabaseManager.addSensors(tmpAccXarray, tmpAccYarray, tmpAccZarray, tmpAccTimestampArray, tmpGyroXarray, tmpGyroYarray, tmpGyroZarray, tmpGyroTimestampArray);
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Integer integer) {
+            super.onPostExecute(integer);
+        }
+
+        @Override
+        protected void onPreExecute() {
+           tmpAccZarray = mAccXarray;
+           tmpAccXarray = mAccXarray;
+           tmpAccYarray = mAccXarray;
+           tmpAccTimestampArray = mAccTimestampArray;
+           tmpGyroZarray = mGyroXarray;
+           tmpGyroXarray = mGyroXarray;
+           tmpGyroYarray = mGyroXarray;
+           tmpGyroTimestampArray = mGyroTimestampArray;
+            super.onPreExecute();
+        }
+    }
+
 
     /////SENSOR SERVICE METHODS///////
 
@@ -268,6 +331,7 @@ public class DatabaseFragment extends Fragment {
 
     public static class ServiceMessageHandler extends Handler {
 
+        private static final String TAG = "ServiceMessageHandler";
         private WeakReference<DatabaseFragment> mFragmentReference;
 
         public ServiceMessageHandler(DatabaseFragment fragment) {
@@ -293,8 +357,9 @@ public class DatabaseFragment extends Fragment {
                 case SensorService.STOP_SENSORS:
                     Bundle data = msg.getData();
 //                        int readingAmount = data.getInt(SensorService.SENSOR_VALUES);
-                    Toast.makeText(fragment.getActivity().getApplicationContext(), "Sensors stopped with " + mFragmentReference.get().getReadingCount() + " reading", Toast.LENGTH_SHORT)
-                            .show();
+                    Log.d(TAG,"Sensors stopped with " + mFragmentReference.get().getReadingCount() + " reading" );
+//                    Toast.makeText(fragment.getActivity().getApplicationContext(), "Sensors stopped with " + mFragmentReference.get().getReadingCount() + " reading", Toast.LENGTH_SHORT)
+//                            .show();
                     break;
                 case SensorService.SENSOR_ERROR:
                     Toast.makeText(fragment.getActivity().getApplicationContext(), "Something went wrong", Toast.LENGTH_SHORT)
@@ -311,29 +376,58 @@ public class DatabaseFragment extends Fragment {
 //        }
     }
 
+    private int accIndex;
+    private int gyroIndex;
     public void appendSensorDataArray(Message message) {
         Bundle sensorBundle;
+
+        sensorBundle = message.getData();
+        float x = sensorBundle.getFloat(SensorService.SENSOR_X);
+        float y = sensorBundle.getFloat(SensorService.SENSOR_Y);
+        float z=  sensorBundle.getFloat(SensorService.SENSOR_Z);
+        long time = sensorBundle.getLong(SensorService.SENSOR_TIMESTAMP);
+
         switch (message.arg1) {
+
             case SensorService.SENSOR_ACC:
-                sensorBundle = message.getData();
-                mAccX.add(sensorBundle.getFloat(SensorService.SENSOR_X));
-                mAccY.add(sensorBundle.getFloat(SensorService.SENSOR_Y));
-                mAccZ.add(sensorBundle.getFloat(SensorService.SENSOR_Z));
-                mAccTimestamp.add(sensorBundle.getLong(SensorService.SENSOR_TIMESTAMP));
+
+                mAccXarray[accIndex] = x;
+                mAccYarray[accIndex] = y;
+                mAccZarray[accIndex] = z;
+                mAccTimestampArray[accIndex] = time;
+                accIndex++;
+//                mAccX.add(sensorBundle.getFloat(SensorService.SENSOR_X));
+//                mAccY.add(sensorBundle.getFloat(SensorService.SENSOR_Y));
+//                mAccZ.add(sensorBundle.getFloat(SensorService.SENSOR_Z));
+//                mAccTimestamp.add(sensorBundle.getLong(SensorService.SENSOR_TIMESTAMP));
 
                 break;
             case SensorService.SENSOR_GYRO:
-                sensorBundle = message.getData();
-                mGyroX.add(sensorBundle.getFloat(SensorService.SENSOR_X));
-                mGyroY.add(sensorBundle.getFloat(SensorService.SENSOR_Y));
-                mGyroZ.add(sensorBundle.getFloat(SensorService.SENSOR_Z));
-                mGyroTimestamp.add(sensorBundle.getLong(SensorService.SENSOR_TIMESTAMP));
+
+                mGyroXarray[gyroIndex] = x;
+                mGyroYarray[gyroIndex] = y;
+                mGyroZarray[gyroIndex] = z;
+                mGyroTimestampArray[gyroIndex] = time;
+                gyroIndex++;
+//                mGyroX.add(sensorBundle.getFloat(SensorService.SENSOR_X));
+//                mGyroY.add(sensorBundle.getFloat(SensorService.SENSOR_Y));
+//                mGyroZ.add(sensorBundle.getFloat(SensorService.SENSOR_Z));
+//                mGyroTimestamp.add(sensorBundle.getLong(SensorService.SENSOR_TIMESTAMP));
                 break;
+        }
+        if(accIndex == arraySize || gyroIndex == arraySize) {
+            new SensorAddingAsyncTask().execute();
+            accIndex = 0;
+            gyroIndex = 0;
         }
     }
 
     public int getReadingCount() {
         return mAccTimestamp.size();
     }
+
+
+
+
 }
 

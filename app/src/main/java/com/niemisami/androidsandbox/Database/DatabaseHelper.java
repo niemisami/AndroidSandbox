@@ -6,6 +6,7 @@ import android.database.Cursor;
 import android.database.CursorWrapper;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.database.sqlite.SQLiteStatement;
 import android.util.Log;
 
 import com.niemisami.androidsandbox.Reading.Reading;
@@ -31,6 +32,8 @@ public class DatabaseHelper extends SQLiteOpenHelper{
 
     //    Table containing sensor data
     private static final String TABLE_SENSOR_DATA = "sensor_data";
+    private static final String TABLE_SENSOR_ACC = "sensor_acc";
+    private static final String TABLE_SENSOR_GYRO = "sensor_gyro";
     //TODO is it better to have two tables, one for acc other for gyro?
     private static final String SENSOR_READING_ID = "reading_id";
     private static final String READING_SENSOR_TYPE = "sensor_type"; // sensor type can be Acc (1) or Gyro (2)
@@ -83,17 +86,37 @@ public class DatabaseHelper extends SQLiteOpenHelper{
                 READING_END_TIME + " INTEGER," +
                 READING_FILE_NAME + " VARCHAR(30))");
 //        Create "sensor data" table
-        db.execSQL("CREATE TABLE " + TABLE_SENSOR_DATA + "(" +
+//        db.execSQL("CREATE TABLE " + TABLE_SENSOR_DATA + "(" +
+////                Next line sets info tables id to foreign key
+//                SENSOR_READING_ID + " INTEGER REFERENCES " + TABLE_READING_INFO + "(" + READING_ID + ")," +
+//                READING_SENSOR_TYPE + " INTEGER," +
+//                READING_X + " REAL," +
+//                READING_Y + " REAL," +
+//                READING_Z + " REAL," +
+//                READING_TIMESTAMP + " INTEGER)");
+        db.execSQL("CREATE TABLE " + TABLE_SENSOR_ACC + "(" +
 //                Next line sets info tables id to foreign key
                 SENSOR_READING_ID + " INTEGER REFERENCES " + TABLE_READING_INFO + "(" + READING_ID + ")," +
-                READING_SENSOR_TYPE + " INTEGER," +
+                READING_X + " REAL," +
+                READING_Y + " REAL," +
+                READING_Z + " REAL," +
+                READING_TIMESTAMP + " INTEGER)");
+        db.execSQL("CREATE TABLE " + TABLE_SENSOR_GYRO + "(" +
+//                Next line sets info tables id to foreign key
+                SENSOR_READING_ID + " INTEGER REFERENCES " + TABLE_READING_INFO + "(" + READING_ID + ")," +
                 READING_X + " REAL," +
                 READING_Y + " REAL," +
                 READING_Z + " REAL," +
                 READING_TIMESTAMP + " INTEGER)");
         Log.i(TAG, "Databases created in " + (System.nanoTime() - start) + "ns");
 
-        db.execSQL("PRAGMA synchronous=FULL");
+//        db.execSQL("PRAGMA synchronous=FULL");
+    }
+
+    @Override
+    public synchronized void close() {
+        super.close();
+        Log.d(TAG, "DatabaseHelper closed");
     }
 
     //////////Inserting data/////////////
@@ -123,14 +146,49 @@ public class DatabaseHelper extends SQLiteOpenHelper{
         cv.put(READING_TIMESTAMP, timestamp);
 //        Log.d(TAG, "" + x + " " + y + " " + z + " " + timestamp);
 
+
         return getWritableDatabase().insert(TABLE_SENSOR_DATA, null, cv);
     }
 
-//        TODO jatka nopeustusta/////////////////////////
-    public long fastInsertSensor(int count) {
+    public long bulkInsertSensorData(float[] ax, float[] ay, float[] az, long[] at, float[] gx, float[] gy, float[] gz, long[] gt) {
 
-        String sql ="INSERT " + TABLE_READING_INFO + " (id, x, y, ,z time) VALUES ( ?,?,?,?)"
+        long start = System.currentTimeMillis();
+        String sqlQuery ="INSERT INTO " + TABLE_SENSOR_ACC + " (" + READING_X + ',' +READING_Y + ',' + READING_Z + ',' + READING_TIMESTAMP +") VALUES (?,?,?,?);";
+        SQLiteDatabase db = getWritableDatabase();
+        SQLiteStatement stmt = db.compileStatement(sqlQuery);
+        db.beginTransaction();
+        for(int i = 0; i< at.length; i++) {
+            stmt.bindDouble(1, ((double) ax[i]));
+            stmt.bindDouble(2, ((double) ay[i]));
+            stmt.bindDouble(3, ((double) az[i]));
+            stmt.bindLong(4, at[i]);
+            stmt.execute();
+            stmt.clearBindings();
+        }
+        db.setTransactionSuccessful();
+        db.endTransaction();
+
+
+        sqlQuery ="INSERT INTO " + TABLE_SENSOR_ACC + " (" + READING_X + ',' +READING_Y + ',' + READING_Z + ',' + READING_TIMESTAMP +") VALUES (?,?,?,?);";
+        stmt = db.compileStatement(sqlQuery);
+        db.beginTransaction();
+        for(int i = 0; i< at.length; i++) {
+            stmt.bindDouble(1, ((double) gx[i]));
+            stmt.bindDouble(2, ((double) gy[i]));
+            stmt.bindDouble(3, ((double) gz[i]));
+            stmt.bindLong(4, gt[i]);
+            stmt.execute();
+            stmt.clearBindings();
+        }
+        db.setTransactionSuccessful();
+        db.endTransaction();
+
+        Log.d(TAG, (System.currentTimeMillis() - start)+"");
+
+        return 1;
+
     }
+
 
     /////////Querying data////////////
 

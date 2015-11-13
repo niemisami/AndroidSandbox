@@ -38,6 +38,7 @@ public class SensorService extends Service {
     public static final String STATUS = "STATUS";
     public static final String SENSOR_VALUES = "SENSOR_VALUES";
     public static final String SENSOR_TYPE = "SENSOR_TYPE";
+    public static final String SENSOR_EVENT = "SENSOR_TYPE";
     public static final String SENSOR_X = "SENSOR_X";
     public static final String SENSOR_Y = "SENSOR_Y";
     public static final String SENSOR_Z = "SENSOR_Z";
@@ -196,6 +197,7 @@ public class SensorService extends Service {
             Message msg = Message.obtain();
             if(sensorType == Sensor.TYPE_ACCELEROMETER) msg.arg1 = SENSOR_ACC;
             else if(sensorType == Sensor.TYPE_GYROSCOPE) msg.arg1 = SENSOR_GYRO;
+
 
             Bundle bundle = new Bundle();
             bundle.putFloat(SENSOR_X, x);
