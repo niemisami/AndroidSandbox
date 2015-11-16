@@ -7,9 +7,16 @@ import android.database.CursorWrapper;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteStatement;
+import android.media.MediaScannerConnection;
+import android.os.Environment;
 import android.util.Log;
 
 import com.niemisami.androidsandbox.Reading.Reading;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.nio.channels.FileChannel;
 
 /**
  * Created by sakrnie on 9.11.2015.
@@ -152,39 +159,44 @@ public class DatabaseHelper extends SQLiteOpenHelper{
 
     public long bulkInsertSensorData(float[] ax, float[] ay, float[] az, long[] at, float[] gx, float[] gy, float[] gz, long[] gt) {
 
-        long start = System.currentTimeMillis();
-        String sqlQuery ="INSERT INTO " + TABLE_SENSOR_ACC + " (" + READING_X + ',' +READING_Y + ',' + READING_Z + ',' + READING_TIMESTAMP +") VALUES (?,?,?,?);";
         SQLiteDatabase db = getWritableDatabase();
-        SQLiteStatement stmt = db.compileStatement(sqlQuery);
-        db.beginTransaction();
-        for(int i = 0; i< at.length; i++) {
-            stmt.bindDouble(1, ((double) ax[i]));
-            stmt.bindDouble(2, ((double) ay[i]));
-            stmt.bindDouble(3, ((double) az[i]));
-            stmt.bindLong(4, at[i]);
-            stmt.execute();
-            stmt.clearBindings();
-        }
+        try {
+            long start = System.currentTimeMillis();
+            String sqlQuery = "INSERT INTO " + TABLE_SENSOR_ACC + " (" + READING_X + ',' + READING_Y + ',' + READING_Z + ',' + READING_TIMESTAMP + ") VALUES (?,?,?,?);";
+            SQLiteStatement stmt = db.compileStatement(sqlQuery);
+            db.beginTransaction();
+            for (int i = 0; i < at.length; i++) {
+                stmt.bindDouble(1, ((double) ax[i]));
+                stmt.bindDouble(2, ((double) ay[i]));
+                stmt.bindDouble(3, ((double) az[i]));
+                stmt.bindLong(4, at[i]);
+                stmt.execute();
+                stmt.clearBindings();
+            }
         db.setTransactionSuccessful();
         db.endTransaction();
 
 
-        sqlQuery ="INSERT INTO " + TABLE_SENSOR_ACC + " (" + READING_X + ',' +READING_Y + ',' + READING_Z + ',' + READING_TIMESTAMP +") VALUES (?,?,?,?);";
-        stmt = db.compileStatement(sqlQuery);
-        db.beginTransaction();
-        for(int i = 0; i< at.length; i++) {
-            stmt.bindDouble(1, ((double) gx[i]));
-            stmt.bindDouble(2, ((double) gy[i]));
-            stmt.bindDouble(3, ((double) gz[i]));
-            stmt.bindLong(4, gt[i]);
-            stmt.execute();
-            stmt.clearBindings();
+            sqlQuery = "INSERT INTO " + TABLE_SENSOR_GYRO + " (" + READING_X + ',' + READING_Y + ',' + READING_Z + ',' + READING_TIMESTAMP + ") VALUES (?,?,?,?);";
+            stmt = db.compileStatement(sqlQuery);
+            db.beginTransaction();
+            for (int i = 0; i < at.length; i++) {
+                stmt.bindDouble(1, ((double) gx[i]));
+                stmt.bindDouble(2, ((double) gy[i]));
+                stmt.bindDouble(3, ((double) gz[i]));
+                stmt.bindLong(4, gt[i]);
+                stmt.execute();
+                stmt.clearBindings();
+            }
+            db.setTransactionSuccessful();
+
+            Log.d(TAG, (System.currentTimeMillis() - start) + "");
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error inserting sensor data to database", e);
+        } finally {
+            db.endTransaction();
         }
-        db.setTransactionSuccessful();
-        db.endTransaction();
-
-        Log.d(TAG, (System.currentTimeMillis() - start)+"");
-
         return 1;
 
     }
@@ -253,4 +265,44 @@ public class DatabaseHelper extends SQLiteOpenHelper{
         }
 
     }
+
+
+    //////EXPORTING DATABASE////////
+//    region
+
+
+    public void exportDatabase(Context context) {
+        File directory = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + "/BackupFolder");
+        directory.mkdirs();
+
+        try {
+            File sd = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+            File data = Environment.getDataDirectory();
+
+            if (sd.canWrite()) {
+                String  currentDBPath= "//data//" + "com.niemisami.androidsandbox"
+                        + "//databases//" + DB_NAME;
+                String backupDBPath  = "/BackupFolder/" + DB_NAME + ".sqlite";
+                File currentDB = new File(data, currentDBPath);
+                File backupDB = new File(sd, backupDBPath);
+
+                FileChannel src = new FileInputStream(currentDB).getChannel();
+                FileChannel dst = new FileOutputStream(backupDB).getChannel();
+                dst.transferFrom(src, 0, src.size());
+                src.close();
+                dst.close();
+                Log.d(TAG, "Exported db successfully");
+
+                String[] path = new String[]{backupDB.getAbsolutePath()};
+                MediaScannerConnection.scanFile(context, path, null, null);
+            }
+        } catch (Exception e) {
+
+            Log.e(TAG, "Error exporting database to file", e);
+
+        }
+
+    }
+
+//    endregion
 }

@@ -15,7 +15,7 @@ public class Stopwatch {
     private long startTime;
     private long elapsedTime;
     private Handler mHandler = new Handler();
-    private final int REFRESH_RATE = 100;
+    private final long REFRESH_RATE = 100l;
     private String minutes, seconds, milliseconds;
     private long secs, mins, msecs;
     private boolean stopped;
@@ -39,7 +39,7 @@ public class Stopwatch {
      * Starts the clock
      */
     public void start() {
-        mStopwatchListener.onStartNegative();
+        mStopwatchListener.onStartStopwatch();
         startTime = System.currentTimeMillis() + 5000;
 
 //        startTime = System.currentTimeMillis();
@@ -51,7 +51,7 @@ public class Stopwatch {
      * Stops the clock
      */
     public void stop() {
-        mStopwatchListener.onStop();
+        mStopwatchListener.onStopStopwatch();
         mHandler.removeCallbacks(startTimer);
         stopped = true;
     }
@@ -92,8 +92,8 @@ public class Stopwatch {
      * @param time
      */
     private void updateTimer(long time) {
-        secs = (long) (time / 1000);
-        mins = (long) ((time / 1000) / 60);
+        secs = (time / 1000);
+        mins = ((time / 1000) / 60);
 
         secs = secs % 60;
         seconds = String.valueOf(Math.abs(secs));
@@ -124,7 +124,7 @@ public class Stopwatch {
     }
 
     /**
-     * Runs the time
+     * Runs the time and invokes StopwatchListener.onTimeZero when time is more than zero
      */
     private Runnable startTimer = new Runnable() {
         @Override
@@ -136,7 +136,7 @@ public class Stopwatch {
                 mHandler.postDelayed(this, REFRESH_RATE);
 
             } else {
-                mStopwatchListener.onStart();
+                if(elapsedTime <= 100) mStopwatchListener.onTimeZero();
                 updateTimer(elapsedTime);
                 mHandler.postDelayed(this, REFRESH_RATE);
             }
@@ -148,10 +148,10 @@ public class Stopwatch {
     }
 
     public interface StopwatchListener {
-        void onStop();
-        void onStartNegative();
-        void onStart();
-        void onTimerValueChange();
+        void onStartStopwatch();
+        void onStopStopwatch();
+        void onTimeZero();
+//        void onTimerValueChange();
     }
 
 }

@@ -37,7 +37,7 @@ import java.util.List;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class DatabaseFragment extends Fragment {
+public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchListener {
     final private String TAG = "DatabaseFragment";
 
     private Toolbar mToolBar;
@@ -61,11 +61,11 @@ public class DatabaseFragment extends Fragment {
     private float[] mAccZarray = new float[arraySize];
     private float[] mAccXarray = new float[arraySize];
     private float[] mAccYarray = new float[arraySize];
-    private long[]mAccTimestampArray = new long[arraySize];
+    private long[] mAccTimestampArray = new long[arraySize];
     private float[] mGyroZarray = new float[arraySize];
     private float[] mGyroXarray = new float[arraySize];
     private float[] mGyroYarray = new float[arraySize];
-    private long []mGyroTimestampArray = new long[arraySize];
+    private long[] mGyroTimestampArray = new long[arraySize];
 
     private boolean mSensorsRunning = false;
 
@@ -78,7 +78,7 @@ public class DatabaseFragment extends Fragment {
     private SQLiteDatabaseManager mDatabaseManager;
 
 
-//    Reading manager to take care of sqlite and reading information
+    //    Reading manager to take care of sqlite and reading information
     private ReadingManager mReadingManager;
 
 
@@ -174,13 +174,13 @@ public class DatabaseFragment extends Fragment {
 //    region
 
     long start;
+
     private void initView(View view) {
 
         mSaveReadingInfoButton = (Button) view.findViewById(R.id.save_information_button);
         mSaveReadingInfoButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mStopwatch.start();
                 start = System.currentTimeMillis();
                 saveReadingInformation();
 
@@ -191,11 +191,12 @@ public class DatabaseFragment extends Fragment {
             @Override
             public void onClick(View v) {
 
-                if(mSensorsRunning) {
-                    stopSensorService();
+                if (mSensorsRunning) {
+                    mStopwatch.stop();
                     mSensorsRunning = !mSensorsRunning;
                 } else {
-                    startSensorService();
+//                    Start stopwatch and listen onTimeZero listener which starts service
+                    mStopwatch.start();
                     mSensorsRunning = !mSensorsRunning;
                 }
                 mStartStopSensorsButton.setText((mSensorsRunning ? "Stop" : "Start"));
@@ -207,6 +208,7 @@ public class DatabaseFragment extends Fragment {
         mVerboseTextView.setText("Events:\n");
 
         mStopwatch = new Stopwatch((TextView) view.findViewById(R.id.stopwatch_view));
+        mStopwatch.setStopwatchListener(this);
 
         mInfoEditText = (EditText) view.findViewById(R.id.info_text_box);
         mNameEditText = (EditText) view.findViewById(R.id.name_text_box);
@@ -218,6 +220,7 @@ public class DatabaseFragment extends Fragment {
 
         getActivity().stopService(mServiceIntent);
     }
+
     private void saveReadingInformation() {
         String name = mNameEditText.getText().toString().trim();
         String notes = mInfoEditText.getText().toString().trim();
@@ -239,7 +242,7 @@ public class DatabaseFragment extends Fragment {
     private void printDBData() {
         List<Reading> readingList = mDatabaseManager.getData();
 
-        for(Reading r : readingList) {
+        for (Reading r : readingList) {
             mVerboseTextView.append("data: " + r.getId() + " name: " + r.getPatientName() + " time: " + r.getStartTime() + "\n");
         }
 
@@ -259,12 +262,12 @@ public class DatabaseFragment extends Fragment {
 //    endregion
 
 
-
     /////SQLITE TASK AND METHODS//////
 
     private void startSQLiteDB(Context context) {
 
     }
+
     private class DatabaseAsyncTask extends AsyncTask<Reading, Integer, Integer> {
         @Override
         protected Integer doInBackground(Reading... params) {
@@ -272,6 +275,7 @@ public class DatabaseFragment extends Fragment {
             mDatabaseManager.insertReadingToDB(params[0]);
             Log.d(TAG, "Saved " + (System.currentTimeMillis() - start));
 
+            mDatabaseManager.exportDb();
             return null;
         }
 
@@ -286,17 +290,19 @@ public class DatabaseFragment extends Fragment {
         }
     }
 
-    /**Async task that puts array values to tmp arrays which are sent to the database*/
+    /**
+     * Async task that puts array values to tmp arrays which are sent to the database
+     */
     private class SensorAddingAsyncTask extends AsyncTask<Integer, Integer, Integer> {
 
         float[] tmpAccZarray;
         float[] tmpAccXarray;
         float[] tmpAccYarray;
-        long[]tmpAccTimestampArray;
+        long[] tmpAccTimestampArray;
         float[] tmpGyroZarray;
         float[] tmpGyroXarray;
         float[] tmpGyroYarray;
-        long [] tmpGyroTimestampArray;
+        long[] tmpGyroTimestampArray;
 
         @Override
         protected Integer doInBackground(Integer... params) {
@@ -311,14 +317,14 @@ public class DatabaseFragment extends Fragment {
 
         @Override
         protected void onPreExecute() {
-           tmpAccZarray = mAccXarray;
-           tmpAccXarray = mAccXarray;
-           tmpAccYarray = mAccXarray;
-           tmpAccTimestampArray = mAccTimestampArray;
-           tmpGyroZarray = mGyroXarray;
-           tmpGyroXarray = mGyroXarray;
-           tmpGyroYarray = mGyroXarray;
-           tmpGyroTimestampArray = mGyroTimestampArray;
+            tmpAccZarray = mAccXarray;
+            tmpAccXarray = mAccXarray;
+            tmpAccYarray = mAccXarray;
+            tmpAccTimestampArray = mAccTimestampArray;
+            tmpGyroZarray = mGyroXarray;
+            tmpGyroXarray = mGyroXarray;
+            tmpGyroYarray = mGyroXarray;
+            tmpGyroTimestampArray = mGyroTimestampArray;
             super.onPreExecute();
         }
     }
@@ -361,7 +367,7 @@ public class DatabaseFragment extends Fragment {
                 case SensorService.STOP_SENSORS:
                     Bundle data = msg.getData();
 //                        int readingAmount = data.getInt(SensorService.SENSOR_VALUES);
-                    Log.d(TAG,"Sensors stopped with " + mFragmentReference.get().getReadingCount() + " reading" );
+                    Log.d(TAG, "Sensors stopped with " + mFragmentReference.get().getReadingCount() + " reading");
 //                    Toast.makeText(fragment.getActivity().getApplicationContext(), "Sensors stopped with " + mFragmentReference.get().getReadingCount() + " reading", Toast.LENGTH_SHORT)
 //                            .show();
                     break;
@@ -382,13 +388,14 @@ public class DatabaseFragment extends Fragment {
 
     private int accIndex;
     private int gyroIndex;
+
     public void appendSensorDataArray(Message message) {
         Bundle sensorBundle;
 
         sensorBundle = message.getData();
         float x = sensorBundle.getFloat(SensorService.SENSOR_X);
         float y = sensorBundle.getFloat(SensorService.SENSOR_Y);
-        float z=  sensorBundle.getFloat(SensorService.SENSOR_Z);
+        float z = sensorBundle.getFloat(SensorService.SENSOR_Z);
         long time = sensorBundle.getLong(SensorService.SENSOR_TIMESTAMP);
 
         switch (message.arg1) {
@@ -419,7 +426,7 @@ public class DatabaseFragment extends Fragment {
 //                mGyroTimestamp.add(sensorBundle.getLong(SensorService.SENSOR_TIMESTAMP));
                 break;
         }
-        if(accIndex == arraySize || gyroIndex == arraySize) {
+        if (accIndex == arraySize || gyroIndex == arraySize) {
             new SensorAddingAsyncTask().execute();
             accIndex = 0;
             gyroIndex = 0;
@@ -430,8 +437,23 @@ public class DatabaseFragment extends Fragment {
         return mAccTimestamp.size();
     }
 
+    @Override
+    public void onStartStopwatch() {
+        Toast.makeText(getActivity().getApplicationContext(), "Watch started", Toast.LENGTH_SHORT)
+                .show();
+    }
 
+    /**Stop sensor service*/
+    @Override
+    public void onStopStopwatch() {
+        stopSensorService();
+//        Toast.makeText(getActivity().getApplicationContext(), "Stopped at " + mStopwatch.getTimeInSeconds(), Toast.LENGTH_SHORT)
+//                .show();
+    }
 
-
+    @Override
+    public void onTimeZero() {
+        startSensorService();
+    }
 }
 

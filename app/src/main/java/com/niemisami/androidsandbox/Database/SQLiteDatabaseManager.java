@@ -117,4 +117,10 @@ public class SQLiteDatabaseManager implements DataManager {
         Log.d(TAG, "Db closed");
 
     }
+
+    /**Export database for debuggin*/
+    public void exportDb() {
+        mHelper.exportDatabase(mContext);
+
+    }
 }
