@@ -8,14 +8,27 @@
 
     <include layout="@layout/toolbar" />
 
-    <TextView
+    <!--<include layout="@layout/reading_data"/>-->
+
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="@dimen/margin_small"
-        android:fontFamily="sans-serif-light"
-        android:gravity="center"
-        android:text="@string/db_intro"
-        android:textColor="@color/dark_black" />
+        android:background="@color/primary">
+
+        <TextView
+            android:id="@+id/stopwatch_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/start_time"
+            android:fontFamily="sans-serif-light"
+            android:gravity="center"
+            android:layout_gravity="center"
+            android:textSize="@dimen/text_clock"
+            android:textColor="@color/ambient_white"
+            android:layout_margin="@dimen/margin_medium"/>
+    </FrameLayout>
+
+
 
     <EditText
         android:id="@+id/name_text_box"
@@ -23,7 +36,7 @@
         android:layout_height="wrap_content"
         android:layout_margin="@dimen/margin_medium"
         android:hint="@string/name"
-        android:textSize="@dimen/text_normal" />
+        android:textSize="@dimen/text_normal"/>
 
     <EditText
         android:id="@+id/info_text_box"
@@ -32,7 +45,6 @@
         android:layout_margin="@dimen/margin_medium"
         android:hint="@string/additional_info"
         android:textSize="@dimen/text_normal" />
-
 
     <ScrollView
         android:id="@+id/verbose_scroll"

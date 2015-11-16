@@ -73,6 +73,7 @@ public class DatabaseFragment extends Fragment {
     private TextView mVerboseTextView;
     private EditText mNameEditText, mInfoEditText;
     private ScrollView mVerboseScrollView;
+    private Stopwatch mStopwatch;
 
     private SQLiteDatabaseManager mDatabaseManager;
 
@@ -179,6 +180,7 @@ public class DatabaseFragment extends Fragment {
         mSaveReadingInfoButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                mStopwatch.start();
                 start = System.currentTimeMillis();
                 saveReadingInformation();
 
@@ -203,6 +205,8 @@ public class DatabaseFragment extends Fragment {
 
         mVerboseTextView = (TextView) view.findViewById(R.id.verbose_box);
         mVerboseTextView.setText("Events:\n");
+
+        mStopwatch = new Stopwatch((TextView) view.findViewById(R.id.stopwatch_view));
 
         mInfoEditText = (EditText) view.findViewById(R.id.info_text_box);
         mNameEditText = (EditText) view.findViewById(R.id.name_text_box);
