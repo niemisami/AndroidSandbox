@@ -85,6 +85,7 @@ public class DatabaseHelper extends SQLiteOpenHelper{
         long start = System.nanoTime();
 
 //        Create "Reading information" table
+//        db.execSQL("COMMIT; PRAGMA synchronous=OFF; BEGIN TRANSACTION");
         db.execSQL("CREATE TABLE " + TABLE_READING_INFO + " (" +
                 READING_ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
                 PATIENT_NAME + " VARCHAR(50) DEFAULT 'Not provided'," +
@@ -103,21 +104,20 @@ public class DatabaseHelper extends SQLiteOpenHelper{
 //                READING_TIMESTAMP + " INTEGER)");
         db.execSQL("CREATE TABLE " + TABLE_SENSOR_ACC + "(" +
 //                Next line sets info tables id to foreign key
-                SENSOR_READING_ID + " INTEGER REFERENCES " + TABLE_READING_INFO + "(" + READING_ID + ")," +
+                SENSOR_READING_ID + " INTEGER REFERENCES " + TABLE_READING_INFO + "(" + READING_ID + ") NOT NULL," +
                 READING_X + " REAL," +
                 READING_Y + " REAL," +
                 READING_Z + " REAL," +
                 READING_TIMESTAMP + " INTEGER)");
         db.execSQL("CREATE TABLE " + TABLE_SENSOR_GYRO + "(" +
 //                Next line sets info tables id to foreign key
-                SENSOR_READING_ID + " INTEGER REFERENCES " + TABLE_READING_INFO + "(" + READING_ID + ")," +
+                SENSOR_READING_ID + " INTEGER REFERENCES " + TABLE_READING_INFO + "(" + READING_ID + ") NOT NULL," +
                 READING_X + " REAL," +
                 READING_Y + " REAL," +
                 READING_Z + " REAL," +
                 READING_TIMESTAMP + " INTEGER)");
         Log.i(TAG, "Databases created in " + (System.nanoTime() - start) + "ns");
 
-//        db.execSQL("PRAGMA synchronous=FULL");
     }
 
     @Override
@@ -130,7 +130,7 @@ public class DatabaseHelper extends SQLiteOpenHelper{
 
     /**
      * When new reading is started insert new row of readings information to the database.
-     * Returns id of the reading added
+     * Returns id of the new reading
      */
     public long insertReading(Reading reading) {
 
@@ -157,19 +157,20 @@ public class DatabaseHelper extends SQLiteOpenHelper{
         return getWritableDatabase().insert(TABLE_SENSOR_DATA, null, cv);
     }
 
-    public long bulkInsertSensorData(float[] ax, float[] ay, float[] az, long[] at, float[] gx, float[] gy, float[] gz, long[] gt) {
+    public long bulkInsertSensorData(long readingId, float[] ax, float[] ay, float[] az, long[] at, float[] gx, float[] gy, float[] gz, long[] gt) {
 
         SQLiteDatabase db = getWritableDatabase();
         try {
             long start = System.currentTimeMillis();
-            String sqlQuery = "INSERT INTO " + TABLE_SENSOR_ACC + " (" + READING_X + ',' + READING_Y + ',' + READING_Z + ',' + READING_TIMESTAMP + ") VALUES (?,?,?,?);";
+            String sqlQuery = "INSERT INTO " + TABLE_SENSOR_ACC + " (" + SENSOR_READING_ID + "," +  READING_X + ',' + READING_Y + ',' + READING_Z + ',' + READING_TIMESTAMP + ") VALUES (?,?,?,?,?);";
             SQLiteStatement stmt = db.compileStatement(sqlQuery);
             db.beginTransaction();
             for (int i = 0; i < at.length; i++) {
-                stmt.bindDouble(1, ((double) ax[i]));
-                stmt.bindDouble(2, ((double) ay[i]));
-                stmt.bindDouble(3, ((double) az[i]));
-                stmt.bindLong(4, at[i]);
+                stmt.bindLong(1, readingId);
+                stmt.bindDouble(2, ((double) ax[i]));
+                stmt.bindDouble(3, ((double) ay[i]));
+                stmt.bindDouble(4, ((double) az[i]));
+                stmt.bindLong(5, at[i]);
                 stmt.execute();
                 stmt.clearBindings();
             }
@@ -177,25 +178,25 @@ public class DatabaseHelper extends SQLiteOpenHelper{
         db.endTransaction();
 
 
-            sqlQuery = "INSERT INTO " + TABLE_SENSOR_GYRO + " (" + READING_X + ',' + READING_Y + ',' + READING_Z + ',' + READING_TIMESTAMP + ") VALUES (?,?,?,?);";
+            sqlQuery = "INSERT INTO " + TABLE_SENSOR_GYRO + " (" + SENSOR_READING_ID + "," + READING_X + ',' + READING_Y + ',' + READING_Z + ',' + READING_TIMESTAMP + ") VALUES (?,?,?,?,?);";
             stmt = db.compileStatement(sqlQuery);
             db.beginTransaction();
             for (int i = 0; i < at.length; i++) {
-                stmt.bindDouble(1, ((double) gx[i]));
-                stmt.bindDouble(2, ((double) gy[i]));
-                stmt.bindDouble(3, ((double) gz[i]));
-                stmt.bindLong(4, gt[i]);
+                stmt.bindLong(1, readingId);
+                stmt.bindDouble(2, ((double) gx[i]));
+                stmt.bindDouble(3, ((double) gy[i]));
+                stmt.bindDouble(4, ((double) gz[i]));
+                stmt.bindLong(5, gt[i]);
                 stmt.execute();
                 stmt.clearBindings();
             }
             db.setTransactionSuccessful();
 
             Log.d(TAG, (System.currentTimeMillis() - start) + "");
+            db.endTransaction();
 
         } catch (Exception e) {
             Log.e(TAG, "Error inserting sensor data to database", e);
-        } finally {
-            db.endTransaction();
         }
         return 1;
 

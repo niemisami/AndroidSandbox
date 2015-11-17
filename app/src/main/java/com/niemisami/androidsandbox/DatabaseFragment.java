@@ -1,7 +1,6 @@
 package com.niemisami.androidsandbox;
 
 
-import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -74,6 +73,8 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
     private EditText mNameEditText, mInfoEditText;
     private ScrollView mVerboseScrollView;
     private Stopwatch mStopwatch;
+
+    private Reading mReading;
 
     private SQLiteDatabaseManager mDatabaseManager;
 
@@ -151,6 +152,7 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
     public void onDestroy() {
         super.onDestroy();
         mDatabaseManager.closeDataManager();
+        Log.d(TAG, "Db frag destroyed");
     }
 
     @Override
@@ -221,22 +223,27 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
         getActivity().stopService(mServiceIntent);
     }
 
+
+    /**
+     * Parse information about the user and save it to the database
+     */
     private void saveReadingInformation() {
         String name = mNameEditText.getText().toString().trim();
         String notes = mInfoEditText.getText().toString().trim();
-        Reading reading;
         mVerboseTextView.append("information about: " + name + " saved\n");
         if (name.length() > 0 && notes.length() > 0) {
-            reading = new Reading(name, notes);
+            mReading = new Reading(name, notes);
         } else if (name.length() > 0 && notes.length() == 0) {
-            reading = new Reading(name, "Not provided");
+            mReading = new Reading(name, "Not provided");
         } else if (name.length() == 0 && notes.length() > 0) {
-            reading = new Reading("Not provided", notes);
+            mReading = new Reading("Not provided", notes);
         } else {
-            reading = new Reading();
+            mReading = new Reading();
         }
 
-        new DatabaseAsyncTask().execute(reading);
+        new DatabaseAsyncTask().execute(mReading);
+
+
     }
 
     private void printDBData() {
@@ -256,7 +263,7 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
     }
 
     private void printSensorStatus() {
-        mVerboseTextView.append("is sensors running " + mSensorsRunning);
+        mVerboseTextView.append("is sensors running " + mSensorsRunning + "\n");
     }
 
 //    endregion
@@ -264,18 +271,13 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
 
     /////SQLITE TASK AND METHODS//////
 
-    private void startSQLiteDB(Context context) {
-
-    }
 
     private class DatabaseAsyncTask extends AsyncTask<Reading, Integer, Integer> {
         @Override
         protected Integer doInBackground(Reading... params) {
-            Log.d(TAG, "starting save " + (System.currentTimeMillis() - start));
-            mDatabaseManager.insertReadingToDB(params[0]);
-            Log.d(TAG, "Saved " + (System.currentTimeMillis() - start));
-
+            mReading.setId(mDatabaseManager.insertReadingToDB(params[0]));
             mDatabaseManager.exportDb();
+//            Log.d(TAG, "Saved " + (System.currentTimeMillis() - start));
             return null;
         }
 
@@ -293,26 +295,31 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
     /**
      * Async task that puts array values to tmp arrays which are sent to the database
      */
-    private class SensorAddingAsyncTask extends AsyncTask<Integer, Integer, Integer> {
+    private class SensorAddingAsyncTask extends AsyncTask<Long, Integer, Integer> {
 
-        float[] tmpAccZarray;
-        float[] tmpAccXarray;
-        float[] tmpAccYarray;
-        long[] tmpAccTimestampArray;
-        float[] tmpGyroZarray;
-        float[] tmpGyroXarray;
-        float[] tmpGyroYarray;
-        long[] tmpGyroTimestampArray;
+        private float[] tmpAccZarray;
+        private float[] tmpAccXarray;
+        private float[] tmpAccYarray;
+        private long[] tmpAccTimestampArray;
+        private float[] tmpGyroZarray;
+        private float[] tmpGyroXarray;
+        private float[] tmpGyroYarray;
+        private long[] tmpGyroTimestampArray;
+        private long readingId;
 
         @Override
-        protected Integer doInBackground(Integer... params) {
-            mDatabaseManager.addSensors(tmpAccXarray, tmpAccYarray, tmpAccZarray, tmpAccTimestampArray, tmpGyroXarray, tmpGyroYarray, tmpGyroZarray, tmpGyroTimestampArray);
+        protected Integer doInBackground(Long... params) {
+            mDatabaseManager.addSensors(readingId, tmpAccXarray, tmpAccYarray, tmpAccZarray, tmpAccTimestampArray, tmpGyroXarray, tmpGyroYarray, tmpGyroZarray, tmpGyroTimestampArray);
             return null;
         }
 
+        /**
+         * Check if reading has id, unles don't perform async task
+         */
         @Override
         protected void onPostExecute(Integer integer) {
             super.onPostExecute(integer);
+
         }
 
         @Override
@@ -325,7 +332,10 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
             tmpGyroXarray = mGyroXarray;
             tmpGyroYarray = mGyroXarray;
             tmpGyroTimestampArray = mGyroTimestampArray;
-            super.onPreExecute();
+            readingId = mReading.getId();
+            if(readingId != -1) {
+                super.onPreExecute();
+            }
         }
     }
 
@@ -336,6 +346,7 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
         Messenger mMessenger = new Messenger(mHandler);
         mServiceIntent = new Intent(getActivity(), SensorService.class);
         mServiceIntent.putExtra("MESSENGER", mMessenger);
+        saveReadingInformation();
         getActivity().startService(mServiceIntent);
     }
 
@@ -443,7 +454,9 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
                 .show();
     }
 
-    /**Stop sensor service*/
+    /**
+     * Stop sensor service
+     */
     @Override
     public void onStopStopwatch() {
         stopSensorService();

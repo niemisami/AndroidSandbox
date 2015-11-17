@@ -47,7 +47,7 @@ public class ReadingManager {
     /**
      * Called when user press start button on UI. Starts reading in new thread
      */
-    public void startNewReading(Reading reading) {
+    public void addNewReading(Reading reading) {
         mReading = reading;
 //        mSensorReadingHandler = new SensorReadingHandler(mContext, mDataManager);
         mHandler.removeCallbacks(mSensorReaderRunnable);

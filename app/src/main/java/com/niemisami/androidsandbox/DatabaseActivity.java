@@ -4,9 +4,12 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 
 public class DatabaseActivity extends AppCompatActivity {
+
+    private final static String TAG = "DatabaseActivity";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,4 +38,10 @@ public class DatabaseActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    public void onBackPressed() {
+        Log.d(TAG, "DB activity back pressed");
+
+        super.onBackPressed();
+    }
 }

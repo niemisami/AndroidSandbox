@@ -80,8 +80,9 @@ public class SQLiteDatabaseManager implements DataManager {
         mHelper.insertSensorData(sensorId, x,y,z,time);
     }
 
-    public void addSensors(float[] ax, float[] ay, float[] az, long[] at, float[] gx, float[] gy, float[] gz, long[] gt) {
-        mHelper.bulkInsertSensorData(ax, ay, az, at, gx, gy, gz, gt);
+    /**Save sensor values in arrays with id to database*/
+    public void addSensors(long id, float[] ax, float[] ay, float[] az, long[] at, float[] gx, float[] gy, float[] gz, long[] gt) {
+        mHelper.bulkInsertSensorData(id, ax, ay, az, at, gx, gy, gz, gt);
     }
 
     @Override

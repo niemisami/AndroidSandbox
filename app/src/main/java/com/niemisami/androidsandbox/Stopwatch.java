@@ -30,7 +30,7 @@ public class Stopwatch {
     public Stopwatch(TextView tw) {
 
         Spannable spannableTime = new SpannableString("-00:00");
-        spannableTime.setSpan(new ForegroundColorSpan(Color.parseColor("#dddddd")), 0,1,Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
+        spannableTime.setSpan(new ForegroundColorSpan(Color.parseColor("#80DEEA")), 0,1,Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
         tw.setText(spannableTime);
         this.tw = tw;
     }

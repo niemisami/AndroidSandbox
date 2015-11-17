@@ -36,6 +36,7 @@
         android:layout_height="wrap_content"
         android:layout_margin="@dimen/margin_medium"
         android:hint="@string/name"
+        android:textColor="@color/cardview_dark_background"
         android:textSize="@dimen/text_normal"/>
 
     <EditText
@@ -44,6 +45,7 @@
         android:layout_height="wrap_content"
         android:layout_margin="@dimen/margin_medium"
         android:hint="@string/additional_info"
+        android:textColor="@color/cardview_dark_background"
         android:textSize="@dimen/text_normal" />
 
     <ScrollView
