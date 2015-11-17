@@ -27,6 +27,9 @@ public class DatabaseHelper extends SQLiteOpenHelper{
     private static final String DB_NAME = "readings_sqlite";
     private static final int DB_VERSION = 1;
 
+//    Debugging
+    private static boolean verbose = false;
+    private static long mStart;
 
     //    Table containing information about the reading, patient name, info etc
     private static final String TABLE_READING_INFO = "reading_information";
@@ -53,7 +56,6 @@ public class DatabaseHelper extends SQLiteOpenHelper{
     public DatabaseHelper(Context context) {
         super(context, DB_NAME, null, DB_VERSION);
     }
-
 
     /*Called when upgrading the version number of the database*/
     @Override
@@ -161,7 +163,9 @@ public class DatabaseHelper extends SQLiteOpenHelper{
 
         SQLiteDatabase db = getWritableDatabase();
         try {
-            long start = System.currentTimeMillis();
+            if(verbose) {
+                mStart = System.currentTimeMillis();
+            }
             String sqlQuery = "INSERT INTO " + TABLE_SENSOR_ACC + " (" + SENSOR_READING_ID + "," +  READING_X + ',' + READING_Y + ',' + READING_Z + ',' + READING_TIMESTAMP + ") VALUES (?,?,?,?,?);";
             SQLiteStatement stmt = db.compileStatement(sqlQuery);
             db.beginTransaction();
@@ -192,7 +196,7 @@ public class DatabaseHelper extends SQLiteOpenHelper{
             }
             db.setTransactionSuccessful();
 
-            Log.d(TAG, (System.currentTimeMillis() - start) + "");
+            if(verbose) Log.d(TAG, (System.currentTimeMillis() - mStart) + "");
             db.endTransaction();
 
         } catch (Exception e) {
@@ -267,6 +271,29 @@ public class DatabaseHelper extends SQLiteOpenHelper{
 
     }
 
+    //////DELETE DATA////////
+
+    public boolean  deleteReading(long id) {
+        long start = System.currentTimeMillis();
+
+        SQLiteDatabase sd = getWritableDatabase();
+        String[] readingId = new String[]{String.valueOf(id)};
+
+
+        //Multiply each result with earlier to make sure that everything worked
+        int result = sd.delete(TABLE_SENSOR_ACC, SENSOR_READING_ID+"=?", readingId);
+        result *= sd.delete(TABLE_SENSOR_GYRO, SENSOR_READING_ID+"=?", readingId);
+        result *= sd.delete(TABLE_READING_INFO, READING_ID+"=?", readingId);
+
+        Log.d(TAG, (System.currentTimeMillis()-start)+"");
+        return (result != 0);
+    }
+
+    private void deleteReadingSensorData(SQLiteDatabase sd, String[] whereArgs) {
+
+    }
+
+
 
     //////EXPORTING DATABASE////////
 //    region
@@ -306,4 +333,11 @@ public class DatabaseHelper extends SQLiteOpenHelper{
     }
 
 //    endregion
+
+    /**Switch verbose state and return the new value*/
+    public boolean switchVerbose(){
+        verbose = !verbose;
+        return verbose;
+    }
+
 }

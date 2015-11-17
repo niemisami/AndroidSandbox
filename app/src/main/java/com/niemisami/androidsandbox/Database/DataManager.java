@@ -29,7 +29,7 @@ public interface DataManager {
     List<Reading> getData();
 
     /**Delete data from certain index*/
-    void deleteData(Reading reading);
+    boolean deleteData(Reading reading);
 
     /**Delete all data from the storage*/
     void deleteAll();

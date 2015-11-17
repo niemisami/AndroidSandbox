@@ -17,8 +17,11 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -73,6 +76,12 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
     private EditText mNameEditText, mInfoEditText;
     private ScrollView mVerboseScrollView;
     private Stopwatch mStopwatch;
+    private FrameLayout mStopwatchLayout;
+
+    //    Stopwatch animation
+    private Animation mSlideDown;
+    private Animation mSlideUp;
+
 
     private Reading mReading;
 
@@ -157,7 +166,17 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        return super.onOptionsItemSelected(item);
+
+        int id = item.getItemId();
+
+        switch (id) {
+            case R.id.action_verbose:
+                boolean verboseState = mDatabaseManager.switchVerbose();
+                item.setTitle(verboseState ? "Turn verbose off" : "Turn verbose on");
+                return true;
+        }
+        return false;
+
     }
 
 
@@ -170,7 +189,7 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
 //    endregion
 
 
-    /////VIEW INITIALIZATION////
+    /////VIEW INITIALIZATION AND ANIMATIONS////
 
 
 //    region
@@ -184,7 +203,16 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
             @Override
             public void onClick(View v) {
                 start = System.currentTimeMillis();
-                saveReadingInformation();
+                final boolean result = mDatabaseManager.deleteData(mReading);
+                getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        mVerboseTextView.append("Removed data " + result + "\n");
+
+                    }
+                });
+                mDatabaseManager.exportDb();
+//                saveReadingInformation();
 
             }
         });
@@ -216,11 +244,66 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
         mNameEditText = (EditText) view.findViewById(R.id.name_text_box);
 
         mVerboseScrollView = (ScrollView) view.findViewById(R.id.verbose_scroll);
+
+        mStopwatchLayout = (FrameLayout) view.findViewById(R.id.stopwatch_frame);
+//        initStopwatchAnimation();
     }
 
-    private void stopSensorService() {
 
-        getActivity().stopService(mServiceIntent);
+    /**
+     * Animation making clock watch appear from the top of the view. NOT IN USE
+     */
+    private void initStopwatchAnimation() {
+        mSlideDown = AnimationUtils.loadAnimation(getActivity(), R.anim.slide_down);
+        mSlideDown.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                mStopwatchLayout.setVisibility(View.VISIBLE);
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
+        mSlideUp = AnimationUtils.loadAnimation(getActivity(), R.anim.slide_up);
+        mSlideUp.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                mStopwatchLayout.setVisibility(View.GONE);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
+    }
+
+    private void showStopwatch() {
+        mStopwatchLayout.startAnimation(mSlideDown);
+    }
+
+    private void hideStopwatch() {
+        mStopwatchLayout.startAnimation(mSlideUp);
+    }
+
+
+//    endregion
+
+    private void stopSensorService() {
+        if (mServiceIntent != null) {
+            getActivity().stopService(mServiceIntent);
+        }
     }
 
 
@@ -276,7 +359,8 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
         @Override
         protected Integer doInBackground(Reading... params) {
             mReading.setId(mDatabaseManager.insertReadingToDB(params[0]));
-            mDatabaseManager.exportDb();
+//            mDatabaseManager.exportDb();
+
 //            Log.d(TAG, "Saved " + (System.currentTimeMillis() - start));
             return null;
         }
@@ -333,7 +417,7 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
             tmpGyroYarray = mGyroXarray;
             tmpGyroTimestampArray = mGyroTimestampArray;
             readingId = mReading.getId();
-            if(readingId != -1) {
+            if (readingId != -1) {
                 super.onPreExecute();
             }
         }

@@ -1,19 +1,22 @@
-package com.niemisami.androidsandbox;
+package com.niemisami.androidsandbox.BluetoothView;
 
 import android.os.Bundle;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 
-public class DatabaseActivity extends AppCompatActivity {
+import com.niemisami.androidsandbox.DatabaseFragment;
+import com.niemisami.androidsandbox.R;
 
-    private final static String TAG = "DatabaseActivity";
+public class BluetoothActivity extends AppCompatActivity {
+
+    private final static String TAG = "BluetoothActivity";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_database);
         inflateFragments();
+
     }
 
 
@@ -28,12 +31,5 @@ public class DatabaseActivity extends AppCompatActivity {
                     .add(R.id.databaseContainer, fragment)
                     .commit();
         }
-    }
-
-    @Override
-    public void onBackPressed() {
-        Log.d(TAG, "DB activity back pressed");
-
-        super.onBackPressed();
     }
 }

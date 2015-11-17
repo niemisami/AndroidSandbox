@@ -2,9 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.niemisami.androidsandbox" >
 
-
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-
 
     <application
         android:allowBackup="true"
@@ -26,10 +24,13 @@
         </activity>
 
         <service
-            android:name="com.niemisami.androidsandbox.services.SensorService"
+            android:name=".services.SensorService"
             android:enabled="true"
             android:exported="false" >
         </service>
+
+        <activity android:name=".BluetoothView.BluetoothActivity" >
+        </activity>
     </application>
 
 </manifest>

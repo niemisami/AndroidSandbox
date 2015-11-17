@@ -62,8 +62,8 @@ public class SQLiteDatabaseManager implements DataManager {
     }
 
     @Override
-    public void deleteData(Reading reading) {
-
+    public boolean deleteData(Reading reading) {
+        return mHelper.deleteReading(reading.getId());
     }
 
     @Override
@@ -119,9 +119,14 @@ public class SQLiteDatabaseManager implements DataManager {
 
     }
 
-    /**Export database for debuggin*/
+    /**Export database for debugging*/
     public void exportDb() {
         mHelper.exportDatabase(mContext);
 
+    }
+
+    /**Debuggin, turn verbose on*/
+    public boolean switchVerbose() {
+        return mHelper.switchVerbose();
     }
 }

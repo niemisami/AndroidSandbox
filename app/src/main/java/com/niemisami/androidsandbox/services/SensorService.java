@@ -228,9 +228,9 @@ public class SensorService extends Service {
                     gyroAmount--;
                     break;
             }
-            if (accAmount > 5000) {
-                stopSensors();
-            }
+//            if (accAmount > 5000) {
+//                stopSensors();
+//            }
 
         }
 

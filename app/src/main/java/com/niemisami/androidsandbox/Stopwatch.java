@@ -118,7 +118,7 @@ public class Stopwatch {
 
         Spannable spannableTime = new SpannableString(this.getTime());
         if (mins >= 0 && secs >= 0) {
-            spannableTime.setSpan(new ForegroundColorSpan(Color.parseColor("#dddddd")), 0, 1, Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
+            spannableTime.setSpan(new ForegroundColorSpan(Color.parseColor("#80DEEA")), 0, 1, Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
         }
         tw.setText(spannableTime);
     }
