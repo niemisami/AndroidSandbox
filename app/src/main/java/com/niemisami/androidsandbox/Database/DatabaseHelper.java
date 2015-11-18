@@ -89,7 +89,7 @@ public class DatabaseHelper extends SQLiteOpenHelper{
 //        Create "Reading information" table
 //        db.execSQL("COMMIT; PRAGMA synchronous=OFF; BEGIN TRANSACTION");
         db.execSQL("CREATE TABLE " + TABLE_READING_INFO + " (" +
-                READING_ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
+                READING_ID + " INTEGER PRIMARY KEY," +
                 PATIENT_NAME + " VARCHAR(50) DEFAULT 'Not provided'," +
                 READING_NOTES + " VARCHAR(100) DEFAULT 'Not provided'," +
                 READING_START_TIME + " INTEGER," +
@@ -118,14 +118,14 @@ public class DatabaseHelper extends SQLiteOpenHelper{
                 READING_Y + " REAL," +
                 READING_Z + " REAL," +
                 READING_TIMESTAMP + " INTEGER)");
-        Log.i(TAG, "Databases created in " + (System.nanoTime() - start) + "ns");
+        if(verbose)Log.i(TAG, "Databases created in " + (System.nanoTime() - start) + "ns");
 
     }
 
     @Override
     public synchronized void close() {
         super.close();
-        Log.d(TAG, "DatabaseHelper closed");
+        if(verbose)Log.d(TAG, "DatabaseHelper closed");
     }
 
     //////////Inserting data/////////////
@@ -281,17 +281,42 @@ public class DatabaseHelper extends SQLiteOpenHelper{
 
 
         //Multiply each result with earlier to make sure that everything worked
-        int result = sd.delete(TABLE_SENSOR_ACC, SENSOR_READING_ID+"=?", readingId);
-        result *= sd.delete(TABLE_SENSOR_GYRO, SENSOR_READING_ID+"=?", readingId);
-        result *= sd.delete(TABLE_READING_INFO, READING_ID+"=?", readingId);
+        boolean result = sd.delete(TABLE_SENSOR_ACC, SENSOR_READING_ID+"=?", readingId) > 0;
+        result &= sd.delete(TABLE_SENSOR_GYRO, SENSOR_READING_ID+"=?", readingId) > 0 ;
+        result &= sd.delete(TABLE_READING_INFO, READING_ID+"=?", readingId) > 0;
 
-        Log.d(TAG, (System.currentTimeMillis()-start)+"");
-        return (result != 0);
+        if(verbose)Log.d(TAG, (System.currentTimeMillis()-start)+" result " + result);
+        return result;
     }
 
-    private void deleteReadingSensorData(SQLiteDatabase sd, String[] whereArgs) {
 
+    //////UPDATING DATA////////
+
+    public void updateReading(long id, String name, String information) {
+        if(verbose) mStart = System.currentTimeMillis();
+
+        SQLiteDatabase sd = getWritableDatabase();
+        ContentValues readingUpdate = new ContentValues();
+        readingUpdate.put(PATIENT_NAME, name);
+        readingUpdate.put(READING_NOTES, information);
+
+        String[] whereArgs = new String[]{String.valueOf(id)};
+        sd.update(TABLE_READING_INFO, readingUpdate, READING_ID+"=?", whereArgs);
+
+        if(verbose) Log.d(TAG, "Updated reading " + name + " in ms:" + (System.currentTimeMillis()-mStart));
     }
+
+    public boolean setEndTime(long id, long endTime) {
+
+        SQLiteDatabase sd = getWritableDatabase();
+        ContentValues readingUpdate = new ContentValues();
+        readingUpdate.put(READING_END_TIME, endTime);
+
+        String[] whereArgs = new String[]{String.valueOf(id)};
+
+        return sd.update(TABLE_READING_INFO, readingUpdate, READING_ID+"=?", whereArgs) > 0;
+    }
+
 
 
 
@@ -319,7 +344,7 @@ public class DatabaseHelper extends SQLiteOpenHelper{
                 dst.transferFrom(src, 0, src.size());
                 src.close();
                 dst.close();
-                Log.d(TAG, "Exported db successfully");
+                if(verbose) Log.d(TAG, "Exported db successfully");
 
                 String[] path = new String[]{backupDB.getAbsolutePath()};
                 MediaScannerConnection.scanFile(context, path, null, null);

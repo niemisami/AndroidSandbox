@@ -82,6 +82,14 @@ public class Reading {
     public void setEndTime(long mEndTime) {
         this.mEndTime = mEndTime;
     }
+    /**Set start time to match current time in millis*/
+    public void setStartTime() {
+        mStartTime = System.currentTimeMillis();
+    }
+    /**Set end time to match current time in millis*/
+    public void setEndTime() {
+        mEndTime = System.currentTimeMillis();
+    }
 
     public long getReadingDuration() {
         if(mReadingDuration <= 0) {

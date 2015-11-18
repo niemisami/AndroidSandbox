@@ -2,13 +2,15 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
         android:id="@+id/action_history"
-        app:showAsAction="never"
-        android:title="Settings">
-    </item>
+        android:title="@string/settings"
+        app:showAsAction="never"/>
     <item
         android:id="@+id/action_verbose"
-        app:showAsAction="never"
-        android:title="Turn verbose on">
-    </item>
+        android:title="@string/verbose_on"
+        app:showAsAction="never"/>
+    <item
+        android:id="@+id/action_export_db"
+        android:title="@string/export_db"
+        app:showAsAction="never"/>
 
 </menu>

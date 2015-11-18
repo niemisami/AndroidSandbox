@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Looper;
 import android.os.Message;
 import android.os.Messenger;
 import android.support.v4.app.Fragment;
@@ -82,6 +84,10 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
     private Animation mSlideDown;
     private Animation mSlideUp;
 
+//    Thread making short database queries and injections
+    private Looper mDbLooper;
+    private Handler mDbHandler;
+
 
     private Reading mReading;
 
@@ -137,6 +143,7 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
             mHandler.setTarget(this);
         }
 
+        initDbUpdateThread();
 
         //Get manager that creates new database connection if not initialized
         mDatabaseManager = SQLiteDatabaseManager.get(getActivity());
@@ -161,8 +168,10 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
     public void onDestroy() {
         super.onDestroy();
         mDatabaseManager.closeDataManager();
+        stopDatabaseThread();
         Log.d(TAG, "Db frag destroyed");
     }
+
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -174,11 +183,24 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
                 boolean verboseState = mDatabaseManager.switchVerbose();
                 item.setTitle(verboseState ? "Turn verbose off" : "Turn verbose on");
                 return true;
+            case R.id.action_export_db:
+                mDatabaseManager.exportDb();
+                appendVerboseView("Database exported");
         }
         return false;
 
     }
 
+    private void appendVerboseView(String message) {
+        message = message + "\n";
+        mVerboseTextView.append(message);
+        mVerboseScrollView.post(new Runnable() {
+            @Override
+            public void run() {
+                mVerboseScrollView.fullScroll(View.FOCUS_DOWN);
+            }
+        });
+    }
 
     //    Create material design Toolbar as menu
     @Override
@@ -194,24 +216,19 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
 
 //    region
 
-    long start;
-
     private void initView(View view) {
 
         mSaveReadingInfoButton = (Button) view.findViewById(R.id.save_information_button);
         mSaveReadingInfoButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                start = System.currentTimeMillis();
                 final boolean result = mDatabaseManager.deleteData(mReading);
                 getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        mVerboseTextView.append("Removed data " + result + "\n");
-
+                        appendVerboseView("Removed data " + result);
                     }
                 });
-                mDatabaseManager.exportDb();
 //                saveReadingInformation();
 
             }
@@ -310,10 +327,14 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
     /**
      * Parse information about the user and save it to the database
      */
+
+    static long start;
     private void saveReadingInformation() {
+
+
         String name = mNameEditText.getText().toString().trim();
         String notes = mInfoEditText.getText().toString().trim();
-        mVerboseTextView.append("information about: " + name + " saved\n");
+        appendVerboseView("information about: " + name + " saved");
         if (name.length() > 0 && notes.length() > 0) {
             mReading = new Reading(name, notes);
         } else if (name.length() > 0 && notes.length() == 0) {
@@ -324,7 +345,15 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
             mReading = new Reading();
         }
 
-        new DatabaseAsyncTask().execute(mReading);
+        mDbHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                mReading.setStartTime();
+                Log.d(TAG, "start " + mReading.getStartTime());
+                mReading.setId(mDatabaseManager.insertReadingToDB(mReading));
+            }
+        });
+//        new DatabaseAsyncTask().execute(mReading);
 
 
     }
@@ -333,20 +362,14 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
         List<Reading> readingList = mDatabaseManager.getData();
 
         for (Reading r : readingList) {
-            mVerboseTextView.append("data: " + r.getId() + " name: " + r.getPatientName() + " time: " + r.getStartTime() + "\n");
+            appendVerboseView("data: " + r.getId() + " name: " + r.getPatientName() + " time: " + r.getStartTime());
         }
 
         printSensorStatus();
-        mVerboseScrollView.post(new Runnable() {
-            @Override
-            public void run() {
-                mVerboseScrollView.fullScroll(View.FOCUS_DOWN);
-            }
-        });
     }
 
     private void printSensorStatus() {
-        mVerboseTextView.append("is sensors running " + mSensorsRunning + "\n");
+        appendVerboseView("is sensors running " + mSensorsRunning);
     }
 
 //    endregion
@@ -354,13 +377,26 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
 
     /////SQLITE TASK AND METHODS//////
 
+    private void initDbUpdateThread() {
+        HandlerThread dbThread = new HandlerThread("ShortDatabaseThread");
+        dbThread.start();
+        mDbLooper = dbThread.getLooper();
+        mDbHandler = new Handler(mDbLooper);
 
+    }
+
+    private void stopDatabaseThread(){
+        mDbHandler.removeCallbacksAndMessages(null);
+        mDbLooper.quit();
+    }
+
+
+    // AsyncTask<doInBackground, onPostExecute, onProgressUpdate>
     private class DatabaseAsyncTask extends AsyncTask<Reading, Integer, Integer> {
         @Override
         protected Integer doInBackground(Reading... params) {
+            params[0].setStartTime(); // set start time now
             mReading.setId(mDatabaseManager.insertReadingToDB(params[0]));
-//            mDatabaseManager.exportDb();
-
 //            Log.d(TAG, "Saved " + (System.currentTimeMillis() - start));
             return null;
         }
@@ -369,6 +405,7 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
         protected void onPreExecute() {
             super.onPreExecute();
         }
+
 
         @Override
         protected void onPostExecute(Integer integer) {
@@ -426,10 +463,12 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
 
     /////SENSOR SERVICE METHODS///////
 
+    /**Start sensor service which reads data and sends it back to the database handler*/
     private void startSensorService() {
         Messenger mMessenger = new Messenger(mHandler);
         mServiceIntent = new Intent(getActivity(), SensorService.class);
         mServiceIntent.putExtra("MESSENGER", mMessenger);
+        //Save reading information to the database
         saveReadingInformation();
         getActivity().startService(mServiceIntent);
     }
@@ -450,7 +489,7 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
 
         public void handleMessage(Message msg) {
 
-            Bundle sensorBundle;
+//            Bundle sensorBundle;
 //            if (getActivity() != null) {
 
             DatabaseFragment fragment = mFragmentReference.get();
@@ -460,7 +499,8 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
                             .show();
                     break;
                 case SensorService.STOP_SENSORS:
-                    Bundle data = msg.getData();
+//                    Bundle data = msg.getData();
+                    mFragmentReference.get().finishReading();
 //                        int readingAmount = data.getInt(SensorService.SENSOR_VALUES);
                     Log.d(TAG, "Sensors stopped with " + mFragmentReference.get().getReadingCount() + " reading");
 //                    Toast.makeText(fragment.getActivity().getApplicationContext(), "Sensors stopped with " + mFragmentReference.get().getReadingCount() + " reading", Toast.LENGTH_SHORT)
@@ -484,6 +524,7 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
     private int accIndex;
     private int gyroIndex;
 
+    /**Save data to temporary arrays*/
     public void appendSensorDataArray(Message message) {
         Bundle sensorBundle;
 
@@ -532,6 +573,9 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
         return mAccTimestamp.size();
     }
 
+
+    ////////STOPWATCH INTERFACE CALLS///////
+//    region
     @Override
     public void onStartStopwatch() {
         Toast.makeText(getActivity().getApplicationContext(), "Watch started", Toast.LENGTH_SHORT)
@@ -552,5 +596,24 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
     public void onTimeZero() {
         startSensorService();
     }
+//    enregion
+
+    /**Indicate that reading is finished and set ending time for the reading by getting latest timestamp
+     * value saved into the Acc timestamp array*/
+    public void finishReading() {
+        mDbHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                long endTime = System.currentTimeMillis();
+                mDatabaseManager.setEndTime(mReading.getId(), endTime);
+                mReading.setEndTime(endTime);
+            }
+        });
+
+    }
+
+
+
+
 }
 

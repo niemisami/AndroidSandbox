@@ -63,7 +63,10 @@ public class SQLiteDatabaseManager implements DataManager {
 
     @Override
     public boolean deleteData(Reading reading) {
-        return mHelper.deleteReading(reading.getId());
+        if(reading != null) {
+            return mHelper.deleteReading(reading.getId());
+        }
+        return false;
     }
 
     @Override
@@ -83,6 +86,11 @@ public class SQLiteDatabaseManager implements DataManager {
     /**Save sensor values in arrays with id to database*/
     public void addSensors(long id, float[] ax, float[] ay, float[] az, long[] at, float[] gx, float[] gy, float[] gz, long[] gt) {
         mHelper.bulkInsertSensorData(id, ax, ay, az, at, gx, gy, gz, gt);
+    }
+
+    /**Tell database to set end time*/
+    public boolean setEndTime(long id, long endTime){
+        return mHelper.setEndTime(id, endTime);
     }
 
     @Override
