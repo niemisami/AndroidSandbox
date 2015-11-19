@@ -301,7 +301,7 @@ public class DatabaseHelper extends SQLiteOpenHelper{
         readingUpdate.put(READING_NOTES, information);
 
         String[] whereArgs = new String[]{String.valueOf(id)};
-        sd.update(TABLE_READING_INFO, readingUpdate, READING_ID+"=?", whereArgs);
+        sd.update(TABLE_READING_INFO, readingUpdate, READING_ID + "=?", whereArgs);
 
         if(verbose) Log.d(TAG, "Updated reading " + name + " in ms:" + (System.currentTimeMillis()-mStart));
     }

@@ -84,7 +84,7 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
     private Animation mSlideDown;
     private Animation mSlideUp;
 
-//    Thread making short database queries and injections
+    //    Thread making short database queries and injections
     private Looper mDbLooper;
     private Handler mDbHandler;
 
@@ -329,6 +329,7 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
      */
 
     static long start;
+
     private void saveReadingInformation() {
 
 
@@ -385,7 +386,7 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
 
     }
 
-    private void stopDatabaseThread(){
+    private void stopDatabaseThread() {
         mDbHandler.removeCallbacksAndMessages(null);
         mDbLooper.quit();
     }
@@ -463,7 +464,9 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
 
     /////SENSOR SERVICE METHODS///////
 
-    /**Start sensor service which reads data and sends it back to the database handler*/
+    /**
+     * Start sensor service which reads data and sends it back to the database handler
+     */
     private void startSensorService() {
         Messenger mMessenger = new Messenger(mHandler);
         mServiceIntent = new Intent(getActivity(), SensorService.class);
@@ -499,6 +502,7 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
                             .show();
                     break;
                 case SensorService.STOP_SENSORS:
+
 //                    Bundle data = msg.getData();
                     mFragmentReference.get().finishReading();
 //                        int readingAmount = data.getInt(SensorService.SENSOR_VALUES);
@@ -513,6 +517,7 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
                 case SensorService.SENSOR_ACC:
                 case SensorService.SENSOR_GYRO:
                     fragment.appendSensorDataArray(msg);
+
                     break;
             }
 
@@ -524,7 +529,9 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
     private int accIndex;
     private int gyroIndex;
 
-    /**Save data to temporary arrays*/
+    /**
+     * Save data to temporary arrays
+     */
     public void appendSensorDataArray(Message message) {
         Bundle sensorBundle;
 
@@ -588,6 +595,8 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
     @Override
     public void onStopStopwatch() {
         stopSensorService();
+
+        // If reading is shorter than 5 seconds remove it from database
 //        Toast.makeText(getActivity().getApplicationContext(), "Stopped at " + mStopwatch.getTimeInSeconds(), Toast.LENGTH_SHORT)
 //                .show();
     }
@@ -598,21 +607,35 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
     }
 //    enregion
 
-    /**Indicate that reading is finished and set ending time for the reading by getting latest timestamp
-     * value saved into the Acc timestamp array*/
+    /**
+     * <p>Indicate that reading is finished and set ending time for the reading by getting latest timestamp
+     * value saved into the Acc timestamp array.</p>
+     * <p>If reading duration is less than 5 seconds, remove data</p>
+     */
     public void finishReading() {
         mDbHandler.post(new Runnable() {
             @Override
             public void run() {
-                long endTime = System.currentTimeMillis();
-                mDatabaseManager.setEndTime(mReading.getId(), endTime);
-                mReading.setEndTime(endTime);
+
+                if (mStopwatch.getTimeInSeconds() <= 5) {
+                    Log.d(TAG, "start removing");
+                    mHandler.removeCallbacksAndMessages(null);
+                    mDatabaseManager.deleteData(mReading);
+                    mReading = null;
+                } else {
+                    Log.d(TAG, "set end time");
+
+                    long endTime = System.currentTimeMillis();
+                    mDatabaseManager.setEndTime(mReading.getId(), endTime);
+                    mReading.setEndTime(endTime);
+                }
             }
         });
+//        reset acc and gyro array indexes
+        accIndex = 0;
+        gyroIndex = 0;
 
     }
-
-
 
 
 }
