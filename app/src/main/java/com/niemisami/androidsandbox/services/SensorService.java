@@ -195,8 +195,8 @@ public class SensorService extends Service {
         private void sendSensorData(int sensorType, float x, float y, float z, long timestamp) {
 
             Message msg = Message.obtain();
-            if(sensorType == Sensor.TYPE_ACCELEROMETER) msg.arg1 = SENSOR_ACC;
-            else if(sensorType == Sensor.TYPE_GYROSCOPE) msg.arg1 = SENSOR_GYRO;
+            if(sensorType == Sensor.TYPE_GYROSCOPE) msg.arg1 = SENSOR_GYRO;
+            else if(sensorType == Sensor.TYPE_ACCELEROMETER) msg.arg1 = SENSOR_ACC;
 
 
             Bundle bundle = new Bundle();

@@ -170,13 +170,15 @@ public class DatabaseHelper extends SQLiteOpenHelper{
             SQLiteStatement stmt = db.compileStatement(sqlQuery);
             db.beginTransaction();
             for (int i = 0; i < at.length; i++) {
-                stmt.bindLong(1, readingId);
-                stmt.bindDouble(2, ((double) ax[i]));
-                stmt.bindDouble(3, ((double) ay[i]));
-                stmt.bindDouble(4, ((double) az[i]));
-                stmt.bindLong(5, at[i]);
-                stmt.execute();
-                stmt.clearBindings();
+                if(at[i] == 0l) continue; //Happens when other sensor starts few milliseconds before other TODO calculate impact on time
+                    stmt.bindLong(1, readingId);
+                    stmt.bindDouble(2, ((double) ax[i]));
+                    stmt.bindDouble(3, ((double) ay[i]));
+                    stmt.bindDouble(4, ((double) az[i]));
+                    stmt.bindLong(5, at[i]);
+                    stmt.execute();
+                    stmt.clearBindings();
+
             }
         db.setTransactionSuccessful();
         db.endTransaction();
@@ -185,7 +187,8 @@ public class DatabaseHelper extends SQLiteOpenHelper{
             sqlQuery = "INSERT INTO " + TABLE_SENSOR_GYRO + " (" + SENSOR_READING_ID + "," + READING_X + ',' + READING_Y + ',' + READING_Z + ',' + READING_TIMESTAMP + ") VALUES (?,?,?,?,?);";
             stmt = db.compileStatement(sqlQuery);
             db.beginTransaction();
-            for (int i = 0; i < at.length; i++) {
+            for (int i = 0; i < gt.length; i++) {
+                if(gt[i] == 0l) continue;  //Happens when other sensor starts few milliseconds before other
                 stmt.bindLong(1, readingId);
                 stmt.bindDouble(2, ((double) gx[i]));
                 stmt.bindDouble(3, ((double) gy[i]));
@@ -205,7 +208,6 @@ public class DatabaseHelper extends SQLiteOpenHelper{
         return 1;
 
     }
-
 
     /////////Querying data////////////
 

@@ -79,10 +79,6 @@ public class SQLiteDatabaseManager implements DataManager {
 //        mHelper.insertSensorData(sensorId, event.values[0], event.values[1], event.values[2], event.timestamp);
     }
 
-    public void addsensor(int sensorId, float x, float y, float z, long time){
-        mHelper.insertSensorData(sensorId, x,y,z,time);
-    }
-
     /**Save sensor values in arrays with id to database*/
     public void addSensors(long id, float[] ax, float[] ay, float[] az, long[] at, float[] gx, float[] gy, float[] gz, long[] gt) {
         mHelper.bulkInsertSensorData(id, ax, ay, az, at, gx, gy, gz, gt);

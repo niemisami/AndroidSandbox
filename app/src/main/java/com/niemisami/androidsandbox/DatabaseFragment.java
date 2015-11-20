@@ -62,14 +62,14 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
 
 
     private final int arraySize = 100;
-    private float[] mAccZarray = new float[arraySize];
-    private float[] mAccXarray = new float[arraySize];
-    private float[] mAccYarray = new float[arraySize];
-    private long[] mAccTimestampArray = new long[arraySize];
-    private float[] mGyroZarray = new float[arraySize];
-    private float[] mGyroXarray = new float[arraySize];
-    private float[] mGyroYarray = new float[arraySize];
-    private long[] mGyroTimestampArray = new long[arraySize];
+    private float[] mAccZarray;
+    private float[] mAccXarray;
+    private float[] mAccYarray;
+    private long[] mAccTimestampArray;
+    private float[] mGyroZarray;
+    private float[] mGyroXarray;
+    private float[] mGyroYarray;
+    private long[] mGyroTimestampArray;
 
     private boolean mSensorsRunning = false;
 
@@ -118,6 +118,7 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
         appCompatActivity.setSupportActionBar(mToolBar);
 
         initView(view);
+        resetArrays();
 
         return view;
     }
@@ -264,6 +265,20 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
 
         mStopwatchLayout = (FrameLayout) view.findViewById(R.id.stopwatch_frame);
 //        initStopwatchAnimation();
+    }
+
+    /**
+     * Initialize arrays
+     */
+    private void resetArrays() {
+        mAccZarray = new float[arraySize];
+        mAccXarray = new float[arraySize];
+        mAccYarray = new float[arraySize];
+        mAccTimestampArray = new long[arraySize];
+        mGyroZarray = new float[arraySize];
+        mGyroXarray = new float[arraySize];
+        mGyroYarray = new float[arraySize];
+        mGyroTimestampArray = new long[arraySize];
     }
 
 
@@ -544,7 +559,7 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
         switch (message.arg1) {
 
             case SensorService.SENSOR_ACC:
-
+//                Gyro is often 55 milliseconds behind acc on sony z3
                 mAccXarray[accIndex] = x;
                 mAccYarray[accIndex] = y;
                 mAccZarray[accIndex] = z;
@@ -634,9 +649,8 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
 //        reset acc and gyro array indexes
         accIndex = 0;
         gyroIndex = 0;
-
+//        Clear arrays from old values
+        resetArrays();
     }
-
-
 }
 
