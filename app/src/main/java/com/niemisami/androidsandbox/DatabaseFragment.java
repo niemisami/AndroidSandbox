@@ -61,15 +61,15 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
     private List<Long> mGyroTimestamp;
 
 
-    private final int arraySize = 200;
-    private float[] mAccZarray;
-    private float[] mAccXarray;
-    private float[] mAccYarray;
-    private long[] mAccTimestampArray;
-    private float[] mGyroZarray;
-    private float[] mGyroXarray;
-    private float[] mGyroYarray;
-    private long[] mGyroTimestampArray;
+    private static final int arraySize = 100;
+    private volatile float[] mAccZarray;
+    private volatile float[] mAccXarray;
+    private volatile float[] mAccYarray;
+    private volatile long[] mAccTimestampArray;
+    private volatile float[] mGyroZarray;
+    private volatile float[] mGyroXarray;
+    private volatile float[] mGyroYarray;
+    private volatile long[] mGyroTimestampArray;
 
     private boolean mSensorsRunning = false;
 
@@ -436,40 +436,42 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
      */
     private class SensorAddingAsyncTask extends AsyncTask<Integer, Integer, Integer> {
 
-        private float[] tmpAccZarray;
-        private float[] tmpAccXarray;
-        private float[] tmpAccYarray;
-        private long[] tmpAccTimestampArray;
+        private float[] tmpZarray;
+        private float[] tmpXarray;
+        private float[] tmpYarray;
+        private long[] tmpTimestampArray;
         private float[] tmpGyroZarray;
         private float[] tmpGyroXarray;
         private float[] tmpGyroYarray;
         private long[] tmpGyroTimestampArray;
         private long readingId;
-        private int sensorId;
 
-        public SensorAddingAsyncTask(int sensorId) {
-            if (sensorId == 1) {
-                tmpAccZarray = mAccXarray;
-                tmpAccXarray = mAccXarray;
-                tmpAccYarray = mAccXarray;
-                tmpAccTimestampArray = mAccTimestampArray;
-            } else {
-                tmpGyroZarray = mGyroXarray;
-                tmpGyroXarray = mGyroXarray;
-                tmpGyroYarray = mGyroXarray;
-                tmpGyroTimestampArray = mGyroTimestampArray;
-            }
+        public SensorAddingAsyncTask() {
             readingId = mReading.getId();
+            tmpZarray = new float[arraySize];
+            tmpXarray = new float[arraySize];
+            tmpYarray = new float[arraySize];
+            tmpTimestampArray = new long[arraySize];
+
         }
 
 
         @Override
         protected Integer doInBackground(Integer... params) {
             int sensorId = params[0];
-            if (sensorId == 1)
-                mDatabaseManager.addSensors(sensorId, readingId, tmpAccXarray, tmpAccYarray, tmpAccZarray, tmpAccTimestampArray);
-            else
-                mDatabaseManager.addSensors(sensorId, readingId, tmpGyroXarray, tmpGyroYarray, tmpGyroZarray, tmpGyroTimestampArray);
+            if (sensorId == 1) {
+                System.arraycopy(mAccXarray, 0, tmpXarray, 0, arraySize);
+                System.arraycopy(mAccYarray, 0, tmpYarray, 0, arraySize);
+                System.arraycopy(mAccZarray, 0, tmpZarray, 0, arraySize);
+                System.arraycopy(mAccTimestampArray, 0, tmpTimestampArray, 0, arraySize);
+            } else {
+                System.arraycopy(mGyroXarray, 0, tmpXarray, 0, arraySize);
+                System.arraycopy(mGyroYarray, 0, tmpYarray, 0, arraySize);
+                System.arraycopy(mGyroZarray, 0, tmpZarray, 0, arraySize);
+                System.arraycopy(mGyroTimestampArray, 0, tmpTimestampArray, 0, arraySize);
+            }
+
+            mDatabaseManager.addSensors(sensorId, readingId, tmpXarray, tmpYarray, tmpZarray, tmpTimestampArray);
             return null;
         }
 
@@ -480,6 +482,7 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
         protected void onPostExecute(Integer integer) {
             super.onPostExecute(integer);
         }
+
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
@@ -555,10 +558,10 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
     private int accIndex;
     private int gyroIndex;
 
-    private float[] tmpZarray;
-    private float[] tmpXarray;
-    private float[] tmpYarray;
-    private long[] tmpTimestampArray;
+//    private static float[] tmpZarray;
+//    private static float[] tmpXarray;
+//    private static float[] tmpYarray;
+//    private static long[] tmpTimestampArray;
 
     /**
      * Save data to temporary arrays
@@ -586,8 +589,8 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
 
                 accIndex++;
 
-                if(accIndex == arraySize) {
-                    new SensorAddingAsyncTask(1).execute(1);
+                if (accIndex == arraySize) {
+                    new SensorAddingAsyncTask().execute(1);
                     accIndex = 0;
                 }
                 break;
@@ -602,11 +605,12 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
                 mGyroXarray[gyroIndex] = sensorBundle.getFloat(SensorService.SENSOR_X);
                 mGyroYarray[gyroIndex] = sensorBundle.getFloat(SensorService.SENSOR_Y);
                 mGyroZarray[gyroIndex] = sensorBundle.getFloat(SensorService.SENSOR_Z);
+                if(mAccTimestamp.size() == 0) mAccTimestamp.add(timeG);
                 mGyroTimestampArray[gyroIndex] = timeG - mAccTimestamp.get(0); //current time - start time
                 gyroIndex++;
 
                 if (gyroIndex == arraySize) {
-                    new SensorAddingAsyncTask(2).execute(2);
+                    new SensorAddingAsyncTask().execute(2);
                     gyroIndex = 0;
                 }
 ////

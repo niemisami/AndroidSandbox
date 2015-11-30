@@ -92,7 +92,7 @@ public class SQLiteDatabaseManager implements DataManager {
     }
 
     public void addSensors(int sensorId, long id, float[] x, float[] y, float[] z, long[] t) {
-        Log.d(TAG, "" + mRunningProcessCount.incrementAndGet());
+        mRunningProcessCount.incrementAndGet();
 //        Log.d(TAG, sensorId + " " + System.currentTimeMillis());
         while (mRunningProcessCount.get() > 1) {
             try {
