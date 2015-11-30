@@ -61,7 +61,7 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
     private List<Long> mGyroTimestamp;
 
 
-    private static final int arraySize = 100;
+    private static final int arraySize = 200;
     private volatile float[] mAccZarray;
     private volatile float[] mAccXarray;
     private volatile float[] mAccYarray;
@@ -272,15 +272,13 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
      * Initialize arrays
      */
     private void resetArrays() {
-        mAccZarray = new float[arraySize];
-        mAccXarray = new float[arraySize];
-        mAccYarray = new float[arraySize];
-        mAccTimestampArray = new long[arraySize];
-        mGyroZarray = new float[arraySize];
-        mGyroXarray = new float[arraySize];
-        mGyroYarray = new float[arraySize];
-        mGyroTimestampArray = new long[arraySize];
+        mAccZ.clear();
+        mAccX.clear();
+        mAccY.clear();
         mAccTimestamp.clear();
+        mGyroZ.clear();
+        mGyroX.clear();
+        mGyroY.clear();
         mGyroTimestamp.clear();
     }
 
@@ -448,30 +446,64 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
 
         public SensorAddingAsyncTask() {
             readingId = mReading.getId();
-            tmpZarray = new float[arraySize];
             tmpXarray = new float[arraySize];
             tmpYarray = new float[arraySize];
+            tmpZarray = new float[arraySize];
             tmpTimestampArray = new long[arraySize];
-
         }
 
 
         @Override
         protected Integer doInBackground(Integer... params) {
             int sensorId = params[0];
+            int lastEntryPoint = params[1];
+//            if (sensorId == 1) {
+//                System.arraycopy(mAccXarray, 0, tmpXarray, 0, arraySize);
+//                System.arraycopy(mAccYarray, 0, tmpYarray, 0, arraySize);
+//                System.arraycopy(mAccZarray, 0, tmpZarray, 0, arraySize);
+//                System.arraycopy(mAccTimestampArray, 0, tmpTimestampArray, 0, arraySize);
+//            } else {
+//                System.arraycopy(mGyroXarray, 0, tmpXarray, 0, arraySize);
+//                System.arraycopy(mGyroYarray, 0, tmpYarray, 0, arraySize);
+//                System.arraycopy(mGyroZarray, 0, tmpZarray, 0, arraySize);
+//                System.arraycopy(mGyroTimestampArray, 0, tmpTimestampArray, 0, arraySize);
+//            }
             if (sensorId == 1) {
-                System.arraycopy(mAccXarray, 0, tmpXarray, 0, arraySize);
-                System.arraycopy(mAccYarray, 0, tmpYarray, 0, arraySize);
-                System.arraycopy(mAccZarray, 0, tmpZarray, 0, arraySize);
-                System.arraycopy(mAccTimestampArray, 0, tmpTimestampArray, 0, arraySize);
+                int arrayIndex = 0;
+                for (int i = lastEntryPoint - arraySize; i < lastEntryPoint; i++) {
+                    tmpXarray[arrayIndex] = mAccX.get(i);
+                    tmpYarray[arrayIndex] = mAccY.get(i);
+                    tmpZarray[arrayIndex] = mAccZ.get(i);
+                    tmpTimestampArray[arrayIndex] = mAccTimestamp.get(i) - mAccTimestamp.get(0);
+                    arrayIndex++;
+                }
+                mDatabaseManager.addSensors(sensorId, readingId, tmpXarray, tmpYarray, tmpZarray, tmpTimestampArray);
+
+//                mDatabaseManager.addSensors(sensorId, readingId,
+//                        mAccX.subList(lastEntryPoint - arraySize, lastEntryPoint),
+//                        mAccY.subList(lastEntryPoint - arraySize, lastEntryPoint),
+//                        mAccZ.subList(lastEntryPoint - arraySize, lastEntryPoint),
+//                        mAccTimestamp.subList(lastEntryPoint - arraySize, lastEntryPoint));
             } else {
-                System.arraycopy(mGyroXarray, 0, tmpXarray, 0, arraySize);
-                System.arraycopy(mGyroYarray, 0, tmpYarray, 0, arraySize);
-                System.arraycopy(mGyroZarray, 0, tmpZarray, 0, arraySize);
-                System.arraycopy(mGyroTimestampArray, 0, tmpTimestampArray, 0, arraySize);
+                int arrayIndex = 0;
+                for (int i = lastEntryPoint - arraySize; i < lastEntryPoint; i++) {
+                    tmpXarray[arrayIndex] = mGyroX.get(i);
+                    tmpYarray[arrayIndex] = mGyroY.get(i);
+                    tmpZarray[arrayIndex] = mGyroZ.get(i);
+                    tmpTimestampArray[arrayIndex] = mGyroTimestamp.get(i);
+                    arrayIndex++;
+                }
+                mDatabaseManager.addSensors(sensorId, readingId, tmpXarray, tmpYarray, tmpZarray, tmpTimestampArray);
             }
 
-            mDatabaseManager.addSensors(sensorId, readingId, tmpXarray, tmpYarray, tmpZarray, tmpTimestampArray);
+//                mDatabaseManager.addSensors(sensorId, readingId,
+//                        mGyroX.subList(lastEntryPoint - arraySize, lastEntryPoint),
+//                        mGyroY.subList(lastEntryPoint - arraySize, lastEntryPoint),
+//                        mGyroZ.subList(lastEntryPoint - arraySize, lastEntryPoint),
+//                        mGyroTimestamp.subList(lastEntryPoint - arraySize, lastEntryPoint));
+//            }
+
+//            mDatabaseManager.addSensors(sensorId, readingId, tmpXarray, tmpYarray, tmpZarray, tmpTimestampArray);
             return null;
         }
 
@@ -581,16 +613,16 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
 //                Gyro is often 55 milliseconds behind acc on sony z3
 
                 long time = sensorBundle.getLong(SensorService.SENSOR_TIMESTAMP);
+
+                mAccX.add(sensorBundle.getFloat(SensorService.SENSOR_X));
+                mAccY.add(sensorBundle.getFloat(SensorService.SENSOR_Y));
+                mAccZ.add(sensorBundle.getFloat(SensorService.SENSOR_Z));
                 mAccTimestamp.add(time);
-                mAccXarray[accIndex] = sensorBundle.getFloat(SensorService.SENSOR_X);
-                mAccYarray[accIndex] = sensorBundle.getFloat(SensorService.SENSOR_Y);
-                mAccZarray[accIndex] = sensorBundle.getFloat(SensorService.SENSOR_Z);
-                mAccTimestampArray[accIndex] = time - mAccTimestamp.get(0);
 
                 accIndex++;
 
                 if (accIndex == arraySize) {
-                    new SensorAddingAsyncTask().execute(1);
+                    new SensorAddingAsyncTask().execute(1, mAccTimestamp.size());
                     accIndex = 0;
                 }
                 break;
@@ -602,15 +634,14 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
 //                    break;
 //                }
                 long timeG = sensorBundle.getLong(SensorService.SENSOR_TIMESTAMP);
-                mGyroXarray[gyroIndex] = sensorBundle.getFloat(SensorService.SENSOR_X);
-                mGyroYarray[gyroIndex] = sensorBundle.getFloat(SensorService.SENSOR_Y);
-                mGyroZarray[gyroIndex] = sensorBundle.getFloat(SensorService.SENSOR_Z);
-                if(mAccTimestamp.size() == 0) mAccTimestamp.add(timeG);
-                mGyroTimestampArray[gyroIndex] = timeG - mAccTimestamp.get(0); //current time - start time
+                mGyroX.add(sensorBundle.getFloat(SensorService.SENSOR_X));
+                mGyroY.add(sensorBundle.getFloat(SensorService.SENSOR_Y));
+                mGyroZ.add(sensorBundle.getFloat(SensorService.SENSOR_Z));
+                mGyroTimestamp.add(timeG - mAccTimestamp.get(0)); //current time - start time
                 gyroIndex++;
 
                 if (gyroIndex == arraySize) {
-                    new SensorAddingAsyncTask().execute(2);
+                    new SensorAddingAsyncTask().execute(2, mGyroTimestamp.size());
                     gyroIndex = 0;
                 }
 ////

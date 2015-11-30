@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.nio.channels.FileChannel;
+import java.util.List;
 
 /**
  * Created by sakrnie on 9.11.2015.
@@ -229,6 +230,59 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
         return -1;
     }
+
+
+    /**
+     * ArrayList version of insert data
+     */
+    public int insertSensorData(int sensorId, long readingId, List<Float> x, List<Float> y, List<Float> z, List<Long> t) {
+        String table;
+        if (sensorId == 1) {
+            table = TABLE_SENSOR_ACC;
+        } else {
+            table = TABLE_SENSOR_GYRO;
+        }
+
+        SQLiteDatabase db = getWritableDatabase();
+//        try {
+//            if(verbose) mStart = System.currentTimeMillis();
+
+        String sqlQuery = "INSERT INTO " + table + " (" + SENSOR_READING_ID + "," + READING_X + ',' + READING_Y + ',' + READING_Z + ',' + READING_TIMESTAMP + ") VALUES (?,?,?,?,?);";
+        SQLiteStatement stmt = db.compileStatement(sqlQuery);
+        db.beginTransaction();
+
+
+        Log.d(TAG, "save");
+        int i = 0;
+        while(t.iterator().hasNext()) {
+            stmt.bindLong(1, readingId);
+            stmt.bindDouble(2, ((double) x.get(i)));
+            stmt.bindDouble(3, ((double) y.get(i)));
+            stmt.bindDouble(4, ((double) z.get(i)));
+            stmt.bindLong(5, t.get(i));
+            stmt.execute();
+            stmt.clearBindings();
+            i++;
+        }
+//        for (int i = 0; i < t.iterator(); i++) {
+////                    Log.d(TAG, "" + sensorId + " " + t[i]);
+////                if(at[i] == 0l) continue; //Happens when other sensor starts few milliseconds before other TODO calculate impact on time
+//
+//
+//        }
+        db.setTransactionSuccessful();
+        db.endTransaction();
+
+//                Log.d(TAG, sensorId + " "+ (System.currentTimeMillis()-start));
+        return 1;
+//        } catch (Exception e) {
+//            Log.e(TAG, "Error inserting sensor data to database", e);
+//        }
+
+//        return -1;
+
+    }
+
 
     /////////Querying data////////////
 

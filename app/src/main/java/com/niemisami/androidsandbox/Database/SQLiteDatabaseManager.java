@@ -107,6 +107,25 @@ public class SQLiteDatabaseManager implements DataManager {
         mRunningProcessCount.decrementAndGet();
     }
 
+    public synchronized void addSensors(int sensorId, long id, List<Float> x, List<Float> y, List<Float> z, List<Long> t) {
+        mRunningProcessCount.incrementAndGet();
+//        Log.d(TAG, sensorId + " " + System.currentTimeMillis());
+        while (mRunningProcessCount.get() > 1) {
+            try {
+                Thread.sleep(30);
+                Log.d(TAG, "Running threads " + mRunningProcessCount.get());
+
+            } catch (InterruptedException e) {
+                Log.e(TAG, "Thread sleeping error", e);
+            }
+        }
+        mHelper.insertSensorData(sensorId, id, x, y, z, t);
+        mRunningProcessCount.decrementAndGet();
+
+    }
+
+
+
 
     /**
      * Tell database to set end time
