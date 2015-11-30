@@ -21,13 +21,13 @@ import java.nio.channels.FileChannel;
 /**
  * Created by sakrnie on 9.11.2015.
  */
-public class DatabaseHelper extends SQLiteOpenHelper{
+public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String TAG = "DatabaseHelper";
     private static final String DB_NAME = "readings_sqlite";
     private static final int DB_VERSION = 1;
 
-//    Debugging
+    //    Debugging
     private static boolean verbose = false;
     private static long mStart;
 
@@ -118,14 +118,14 @@ public class DatabaseHelper extends SQLiteOpenHelper{
                 READING_Y + " REAL," +
                 READING_Z + " REAL," +
                 READING_TIMESTAMP + " INTEGER)");
-        if(verbose)Log.i(TAG, "Databases created in " + (System.nanoTime() - start) + "ns");
+        if (verbose) Log.i(TAG, "Databases created in " + (System.nanoTime() - start) + "ns");
 
     }
 
     @Override
     public synchronized void close() {
         super.close();
-        if(verbose)Log.d(TAG, "DatabaseHelper closed");
+        if (verbose) Log.d(TAG, "DatabaseHelper closed");
     }
 
     //////////Inserting data/////////////
@@ -145,7 +145,6 @@ public class DatabaseHelper extends SQLiteOpenHelper{
     }
 
 
-
     public long insertSensorData(int id, float x, float y, float z, long timestamp) {
         ContentValues cv = new ContentValues();
         cv.put(READING_SENSOR_TYPE, id);
@@ -163,50 +162,72 @@ public class DatabaseHelper extends SQLiteOpenHelper{
 
         SQLiteDatabase db = getWritableDatabase();
         try {
-            if(verbose) {
-                mStart = System.currentTimeMillis();
-            }
-            String sqlQuery = "INSERT INTO " + TABLE_SENSOR_ACC + " (" + SENSOR_READING_ID + "," +  READING_X + ',' + READING_Y + ',' + READING_Z + ',' + READING_TIMESTAMP + ") VALUES (?,?,?,?,?);";
+//            if(verbose) mStart = System.currentTimeMillis();
+
+            String sqlQuery = "INSERT INTO " + TABLE_SENSOR_ACC + " (" + SENSOR_READING_ID + "," + READING_X + ',' + READING_Y + ',' + READING_Z + ',' + READING_TIMESTAMP + ") VALUES (?,?,?,?,?);";
             SQLiteStatement stmt = db.compileStatement(sqlQuery);
             db.beginTransaction();
             for (int i = 0; i < at.length; i++) {
-                if(at[i] == 0l) continue; //Happens when other sensor starts few milliseconds before other TODO calculate impact on time
-                    stmt.bindLong(1, readingId);
-                    stmt.bindDouble(2, ((double) ax[i]));
-                    stmt.bindDouble(3, ((double) ay[i]));
-                    stmt.bindDouble(4, ((double) az[i]));
-                    stmt.bindLong(5, at[i]);
-                    stmt.execute();
-                    stmt.clearBindings();
-
-            }
-        db.setTransactionSuccessful();
-        db.endTransaction();
-
-
-            sqlQuery = "INSERT INTO " + TABLE_SENSOR_GYRO + " (" + SENSOR_READING_ID + "," + READING_X + ',' + READING_Y + ',' + READING_Z + ',' + READING_TIMESTAMP + ") VALUES (?,?,?,?,?);";
-            stmt = db.compileStatement(sqlQuery);
-            db.beginTransaction();
-            for (int i = 0; i < gt.length; i++) {
-                if(gt[i] == 0l) continue;  //Happens when other sensor starts few milliseconds before other
+//                if(at[i] == 0l) continue; //Happens when other sensor starts few milliseconds before other TODO calculate impact on time
                 stmt.bindLong(1, readingId);
-                stmt.bindDouble(2, ((double) gx[i]));
-                stmt.bindDouble(3, ((double) gy[i]));
-                stmt.bindDouble(4, ((double) gz[i]));
-                stmt.bindLong(5, gt[i]);
+                stmt.bindDouble(2, ((double) ax[i]));
+                stmt.bindDouble(3, ((double) ay[i]));
+                stmt.bindDouble(4, ((double) az[i]));
+                stmt.bindLong(5, at[i]);
                 stmt.execute();
                 stmt.clearBindings();
+
             }
             db.setTransactionSuccessful();
-
-            if(verbose) Log.d(TAG, (System.currentTimeMillis() - mStart) + "");
             db.endTransaction();
 
+
+            return 1;
+
+        } catch (Exception e) {
+
+        }
+
+        return -1;
+    }
+
+    public int insertSensorData(int sensorId, long readingId, float[] x, float[] y, float[] z, long[] t) {
+        String table;
+        if (sensorId == 1) {
+            table = TABLE_SENSOR_ACC;
+        } else {
+            table = TABLE_SENSOR_GYRO;
+        }
+
+        SQLiteDatabase db = getWritableDatabase();
+        try {
+//            if(verbose) mStart = System.currentTimeMillis();
+
+            String sqlQuery = "INSERT INTO " + table + " (" + SENSOR_READING_ID + "," + READING_X + ',' + READING_Y + ',' + READING_Z + ',' + READING_TIMESTAMP + ") VALUES (?,?,?,?,?);";
+            SQLiteStatement stmt = db.compileStatement(sqlQuery);
+            db.beginTransaction();
+            for (int i = 0; i < t.length; i++) {
+//                    Log.d(TAG, "" + sensorId + " " + t[i]);
+//                if(at[i] == 0l) continue; //Happens when other sensor starts few milliseconds before other TODO calculate impact on time
+                stmt.bindLong(1, readingId);
+                stmt.bindDouble(2, ((double) x[i]));
+                stmt.bindDouble(3, ((double) y[i]));
+                stmt.bindDouble(4, ((double) z[i]));
+                stmt.bindLong(5, t[i]);
+                stmt.execute();
+                stmt.clearBindings();
+
+            }
+            db.setTransactionSuccessful();
+            db.endTransaction();
+
+//                Log.d(TAG, sensorId + " "+ (System.currentTimeMillis()-start));
+            return 1;
         } catch (Exception e) {
             Log.e(TAG, "Error inserting sensor data to database", e);
         }
-        return 1;
 
+        return -1;
     }
 
     /////////Querying data////////////
@@ -214,6 +235,7 @@ public class DatabaseHelper extends SQLiteOpenHelper{
     /**
      * Returns all readings from the table reading_information
      */
+
     public ReadingCursor queryReadings() {
         // Same to query SELECT * FROM reading_information. Organize readings by start time
         Cursor wrapper = getReadableDatabase().query(TABLE_READING_INFO,
@@ -275,7 +297,7 @@ public class DatabaseHelper extends SQLiteOpenHelper{
 
     //////DELETE DATA////////
 
-    public boolean  deleteReading(long id) {
+    public boolean deleteReading(long id) {
         long start = System.currentTimeMillis();
 
         SQLiteDatabase sd = getWritableDatabase();
@@ -283,11 +305,11 @@ public class DatabaseHelper extends SQLiteOpenHelper{
 
 
         //Multiply each result with earlier to make sure that everything worked
-        boolean result = sd.delete(TABLE_SENSOR_ACC, SENSOR_READING_ID+"=?", readingId) > 0;
-        result &= sd.delete(TABLE_SENSOR_GYRO, SENSOR_READING_ID+"=?", readingId) > 0 ;
-        result &= sd.delete(TABLE_READING_INFO, READING_ID+"=?", readingId) > 0;
+        boolean result = sd.delete(TABLE_SENSOR_ACC, SENSOR_READING_ID + "=?", readingId) > 0;
+        result &= sd.delete(TABLE_SENSOR_GYRO, SENSOR_READING_ID + "=?", readingId) > 0;
+        result &= sd.delete(TABLE_READING_INFO, READING_ID + "=?", readingId) > 0;
 
-        if(verbose)Log.d(TAG, (System.currentTimeMillis()-start)+" result " + result);
+        if (verbose) Log.d(TAG, (System.currentTimeMillis() - start) + " result " + result);
         return result;
     }
 
@@ -295,7 +317,7 @@ public class DatabaseHelper extends SQLiteOpenHelper{
     //////UPDATING DATA////////
 
     public void updateReading(long id, String name, String information) {
-        if(verbose) mStart = System.currentTimeMillis();
+        if (verbose) mStart = System.currentTimeMillis();
 
         SQLiteDatabase sd = getWritableDatabase();
         ContentValues readingUpdate = new ContentValues();
@@ -305,7 +327,8 @@ public class DatabaseHelper extends SQLiteOpenHelper{
         String[] whereArgs = new String[]{String.valueOf(id)};
         sd.update(TABLE_READING_INFO, readingUpdate, READING_ID + "=?", whereArgs);
 
-        if(verbose) Log.d(TAG, "Updated reading " + name + " in ms:" + (System.currentTimeMillis()-mStart));
+        if (verbose)
+            Log.d(TAG, "Updated reading " + name + " in ms:" + (System.currentTimeMillis() - mStart));
     }
 
     public boolean setEndTime(long id, long endTime) {
@@ -316,10 +339,8 @@ public class DatabaseHelper extends SQLiteOpenHelper{
 
         String[] whereArgs = new String[]{String.valueOf(id)};
 
-        return sd.update(TABLE_READING_INFO, readingUpdate, READING_ID+"=?", whereArgs) > 0;
+        return sd.update(TABLE_READING_INFO, readingUpdate, READING_ID + "=?", whereArgs) > 0;
     }
-
-
 
 
     //////EXPORTING DATABASE////////
@@ -335,9 +356,9 @@ public class DatabaseHelper extends SQLiteOpenHelper{
             File data = Environment.getDataDirectory();
 
             if (sd.canWrite()) {
-                String  currentDBPath= "//data//" + "com.niemisami.androidsandbox"
+                String currentDBPath = "//data//" + "com.niemisami.androidsandbox"
                         + "//databases//" + DB_NAME;
-                String backupDBPath  = "/BackupFolder/" + DB_NAME + ".sqlite";
+                String backupDBPath = "/BackupFolder/" + DB_NAME + ".sqlite";
                 File currentDB = new File(data, currentDBPath);
                 File backupDB = new File(sd, backupDBPath);
 
@@ -346,7 +367,7 @@ public class DatabaseHelper extends SQLiteOpenHelper{
                 dst.transferFrom(src, 0, src.size());
                 src.close();
                 dst.close();
-                if(verbose) Log.d(TAG, "Exported db successfully");
+                if (verbose) Log.d(TAG, "Exported db successfully");
 
                 String[] path = new String[]{backupDB.getAbsolutePath()};
                 MediaScannerConnection.scanFile(context, path, null, null);
@@ -361,8 +382,10 @@ public class DatabaseHelper extends SQLiteOpenHelper{
 
 //    endregion
 
-    /**Switch verbose state and return the new value*/
-    public boolean switchVerbose(){
+    /**
+     * Switch verbose state and return the new value
+     */
+    public boolean switchVerbose() {
         verbose = !verbose;
         return verbose;
     }

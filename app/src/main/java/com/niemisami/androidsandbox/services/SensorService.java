@@ -148,8 +148,8 @@ public class SensorService extends Service {
 
         private void startSensors() {
             Log.d(TAG, "Sensors Started");
-            mSensorManager.registerListener(this, mAccSensor, mSensorDelay);
-            mSensorManager.registerListener(this, mGyroSensor, mSensorDelay);
+            mSensorManager.registerListener(this, mAccSensor, SensorManager.SENSOR_DELAY_FASTEST);
+            mSensorManager.registerListener(this, mGyroSensor,SensorManager.SENSOR_DELAY_FASTEST);
             sendResultToClient(START_SENSORS);
         }
 
@@ -198,7 +198,6 @@ public class SensorService extends Service {
             if(sensorType == Sensor.TYPE_GYROSCOPE) msg.arg1 = SENSOR_GYRO;
             else if(sensorType == Sensor.TYPE_ACCELEROMETER) msg.arg1 = SENSOR_ACC;
 
-
             Bundle bundle = new Bundle();
             bundle.putFloat(SENSOR_X, x);
             bundle.putFloat(SENSOR_Y, y);
@@ -225,7 +224,7 @@ public class SensorService extends Service {
                     break;
                 case Sensor.TYPE_GYROSCOPE:
                     sendSensorData(Sensor.TYPE_GYROSCOPE, event.values[0], event.values[1], event.values[2], event.timestamp);
-                    gyroAmount--;
+//                    gyroAmount--;
                     break;
             }
 //            if (accAmount > 5000) {
