@@ -1,6 +1,7 @@
 package com.niemisami.androidsandbox.Database;
 
-import android.hardware.SensorEvent;
+import android.os.Message;
+
 import com.niemisami.androidsandbox.Reading.Reading;
 
 import java.util.List;
@@ -35,7 +36,9 @@ public interface DataManager {
     void deleteAll();
 
     /**Add sensor data right away to the storage*/
-    void addData(int id, SensorEvent event);
+    void addData(int sensorType, float x, float y ,float z, long timestamp);
+
+    void addData(Message message);
 
     /**Return count of all readings*/
     int getCount();

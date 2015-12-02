@@ -1,7 +1,6 @@
 package com.niemisami.androidsandbox.Reading;
 
 import android.content.Context;
-import android.hardware.SensorEvent;
 import android.os.Handler;
 import android.util.Log;
 
@@ -147,7 +146,7 @@ public class ReadingManager {
     /**
      * Method stores sensor data to the database
      */
-    public void addSensorDataToStorage(int sensorId, SensorEvent event) {
-        mDataManager.addData(sensorId, event);
+    public void addSensorDataToStorage(int sensorId) {
+//        mDataManager.addData(sensorId);
     }
 }

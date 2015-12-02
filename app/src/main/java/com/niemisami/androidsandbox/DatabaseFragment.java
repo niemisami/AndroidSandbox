@@ -2,7 +2,6 @@ package com.niemisami.androidsandbox;
 
 
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -34,7 +33,6 @@ import com.niemisami.androidsandbox.Reading.ReadingManager;
 import com.niemisami.androidsandbox.services.SensorService;
 
 import java.lang.ref.WeakReference;
-import java.util.ArrayList;
 import java.util.List;
 
 
@@ -42,34 +40,14 @@ import java.util.List;
  * A simple {@link Fragment} subclass.
  */
 public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchListener {
+    /////VARIABLES/////
+//    region
     final private String TAG = "DatabaseFragment";
 
     private Toolbar mToolBar;
     private ServiceMessageHandler mHandler;
 
     private Intent mServiceIntent;
-
-
-    //    Sensor data values
-    private List<Float> mAccZ;
-    private List<Float> mAccX;
-    private List<Float> mAccY;
-    private List<Long> mAccTimestamp;
-    private List<Float> mGyroZ;
-    private List<Float> mGyroX;
-    private List<Float> mGyroY;
-    private List<Long> mGyroTimestamp;
-
-
-    private static final int arraySize = 200;
-    private volatile float[] mAccZarray;
-    private volatile float[] mAccXarray;
-    private volatile float[] mAccYarray;
-    private volatile long[] mAccTimestampArray;
-    private volatile float[] mGyroZarray;
-    private volatile float[] mGyroXarray;
-    private volatile float[] mGyroYarray;
-    private volatile long[] mGyroTimestampArray;
 
     private boolean mSensorsRunning = false;
 
@@ -90,9 +68,10 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
 
 
     private Reading mReading;
-    private long mReadingId;
 
     private SQLiteDatabaseManager mDatabaseManager;
+
+//    endregion
 
 
     //    Reading manager to take care of sqlite and reading information
@@ -119,7 +98,6 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
         appCompatActivity.setSupportActionBar(mToolBar);
 
         initView(view);
-        resetArrays();
 
         return view;
     }
@@ -129,15 +107,6 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
     public void onCreate(Bundle savedInstanceState) {
 
         mReadingManager = ReadingManager.get(getActivity());
-
-        mAccX = new ArrayList<>();
-        mAccY = new ArrayList<>();
-        mAccZ = new ArrayList<>();
-        mAccTimestamp = new ArrayList<>();
-        mGyroX = new ArrayList<>();
-        mGyroY = new ArrayList<>();
-        mGyroZ = new ArrayList<>();
-        mGyroTimestamp = new ArrayList<>();
 
         if (mHandler == null) {
             mHandler = new ServiceMessageHandler(this);
@@ -156,7 +125,6 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
     @Override
     public void onResume() {
         super.onResume();
-
     }
 
 
@@ -213,9 +181,7 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
 //    endregion
 
 
-    /////VIEW INITIALIZATION AND ANIMATIONS////
-
-
+    /////VIEW INITIALIZATION, ANIMATIONS AND UI METHOD////
 //    region
 
     private void initView(View view) {
@@ -268,20 +234,6 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
 //        initStopwatchAnimation();
     }
 
-    /**
-     * Initialize arrays
-     */
-    private void resetArrays() {
-        mAccZ.clear();
-        mAccX.clear();
-        mAccY.clear();
-        mAccTimestamp.clear();
-        mGyroZ.clear();
-        mGyroX.clear();
-        mGyroY.clear();
-        mGyroTimestamp.clear();
-    }
-
 
     /**
      * Animation making clock watch appear from the top of the view. NOT IN USE
@@ -330,14 +282,21 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
         mStopwatchLayout.startAnimation(mSlideUp);
     }
 
+    private void printDBData() {
+        List<Reading> readingList = mDatabaseManager.getData();
+
+        for (Reading r : readingList) {
+            appendVerboseView("data: " + r.getId() + " name: " + r.getPatientName() + " time: " + (r.getEndTime() - r.getStartTime()) + "ms");
+        }
+        printSensorStatus();
+    }
+
+    private void printSensorStatus() {
+        appendVerboseView("is sensors running " + mSensorsRunning);
+    }
+
 
 //    endregion
-
-    private void stopSensorService() {
-        if (mServiceIntent != null) {
-            getActivity().stopService(mServiceIntent);
-        }
-    }
 
 
     /**
@@ -364,8 +323,11 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
             public void run() {
                 mReading.setStartTime();
                 Log.d(TAG, "start " + mReading.getStartTime());
-                mReadingId = mDatabaseManager.insertReadingToDB(mReading);
-                mReading.setId(mReadingId);
+//                Sets reading to database manager
+//                mReadingId = mDatabaseManager.insertReadingToDB(mReading);
+                mDatabaseManager.startNewReading(mReading);
+//                TODO this id might not be necessary
+//                mReading.setId(mReadingId);
 
             }
         });
@@ -374,156 +336,28 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
 
     }
 
-    private void printDBData() {
-        List<Reading> readingList = mDatabaseManager.getData();
 
-        for (Reading r : readingList) {
-            appendVerboseView("data: " + r.getId() + " name: " + r.getPatientName() + " time: " + r.getStartTime());
-        }
-
-        printSensorStatus();
-    }
-
-    private void printSensorStatus() {
-        appendVerboseView("is sensors running " + mSensorsRunning);
-    }
 
 //    endregion
 
 
-    /////SQLITE TASK AND METHODS//////
+    /////SQLITE METHODS//////
+//    region
 
     private void initDbUpdateThread() {
         HandlerThread dbThread = new HandlerThread("ShortDatabaseThread");
         dbThread.start();
         mDbLooper = dbThread.getLooper();
         mDbHandler = new Handler(mDbLooper);
-
     }
 
     private void stopDatabaseThread() {
         mDbHandler.removeCallbacksAndMessages(null);
         mDbLooper.quit();
     }
-
-
-    // AsyncTask<doInBackground, onPostExecute, onProgressUpdate>
-    private class DatabaseAsyncTask extends AsyncTask<Reading, Integer, Integer> {
-        @Override
-        protected Integer doInBackground(Reading... params) {
-            params[0].setStartTime(); // set start time now
-            mReading.setId(mDatabaseManager.insertReadingToDB(params[0]));
-//            Log.d(TAG, "Saved " + (System.currentTimeMillis() - start));
-            return null;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-        }
-
-
-        @Override
-        protected void onPostExecute(Integer integer) {
-            super.onPostExecute(integer);
-        }
-    }
-
-    /**
-     * Async task that puts array values to tmp arrays which are sent to the database
-     */
-    private class SensorAddingAsyncTask extends AsyncTask<Integer, Integer, Integer> {
-
-        private float[] tmpZarray;
-        private float[] tmpXarray;
-        private float[] tmpYarray;
-        private long[] tmpTimestampArray;
-        private float[] tmpGyroZarray;
-        private float[] tmpGyroXarray;
-        private float[] tmpGyroYarray;
-        private long[] tmpGyroTimestampArray;
-        private long readingId;
-
-        public SensorAddingAsyncTask() {
-            readingId = mReading.getId();
-            tmpXarray = new float[arraySize];
-            tmpYarray = new float[arraySize];
-            tmpZarray = new float[arraySize];
-            tmpTimestampArray = new long[arraySize];
-        }
-
-
-        @Override
-        protected Integer doInBackground(Integer... params) {
-            int sensorId = params[0];
-            int lastEntryPoint = params[1];
-//            if (sensorId == 1) {
-//                System.arraycopy(mAccXarray, 0, tmpXarray, 0, arraySize);
-//                System.arraycopy(mAccYarray, 0, tmpYarray, 0, arraySize);
-//                System.arraycopy(mAccZarray, 0, tmpZarray, 0, arraySize);
-//                System.arraycopy(mAccTimestampArray, 0, tmpTimestampArray, 0, arraySize);
-//            } else {
-//                System.arraycopy(mGyroXarray, 0, tmpXarray, 0, arraySize);
-//                System.arraycopy(mGyroYarray, 0, tmpYarray, 0, arraySize);
-//                System.arraycopy(mGyroZarray, 0, tmpZarray, 0, arraySize);
-//                System.arraycopy(mGyroTimestampArray, 0, tmpTimestampArray, 0, arraySize);
-//            }
-            if (sensorId == 1) {
-                int arrayIndex = 0;
-                for (int i = lastEntryPoint - arraySize; i < lastEntryPoint; i++) {
-                    tmpXarray[arrayIndex] = mAccX.get(i);
-                    tmpYarray[arrayIndex] = mAccY.get(i);
-                    tmpZarray[arrayIndex] = mAccZ.get(i);
-                    tmpTimestampArray[arrayIndex] = mAccTimestamp.get(i) - mAccTimestamp.get(0);
-                    arrayIndex++;
-                }
-                mDatabaseManager.addSensors(sensorId, readingId, tmpXarray, tmpYarray, tmpZarray, tmpTimestampArray);
-
-//                mDatabaseManager.addSensors(sensorId, readingId,
-//                        mAccX.subList(lastEntryPoint - arraySize, lastEntryPoint),
-//                        mAccY.subList(lastEntryPoint - arraySize, lastEntryPoint),
-//                        mAccZ.subList(lastEntryPoint - arraySize, lastEntryPoint),
-//                        mAccTimestamp.subList(lastEntryPoint - arraySize, lastEntryPoint));
-            } else {
-                int arrayIndex = 0;
-                for (int i = lastEntryPoint - arraySize; i < lastEntryPoint; i++) {
-                    tmpXarray[arrayIndex] = mGyroX.get(i);
-                    tmpYarray[arrayIndex] = mGyroY.get(i);
-                    tmpZarray[arrayIndex] = mGyroZ.get(i);
-                    tmpTimestampArray[arrayIndex] = mGyroTimestamp.get(i);
-                    arrayIndex++;
-                }
-                mDatabaseManager.addSensors(sensorId, readingId, tmpXarray, tmpYarray, tmpZarray, tmpTimestampArray);
-            }
-
-//                mDatabaseManager.addSensors(sensorId, readingId,
-//                        mGyroX.subList(lastEntryPoint - arraySize, lastEntryPoint),
-//                        mGyroY.subList(lastEntryPoint - arraySize, lastEntryPoint),
-//                        mGyroZ.subList(lastEntryPoint - arraySize, lastEntryPoint),
-//                        mGyroTimestamp.subList(lastEntryPoint - arraySize, lastEntryPoint));
-//            }
-
-//            mDatabaseManager.addSensors(sensorId, readingId, tmpXarray, tmpYarray, tmpZarray, tmpTimestampArray);
-            return null;
-        }
-
-        /**
-         * Check if reading has id, unless don't perform async task
-         */
-        @Override
-        protected void onPostExecute(Integer integer) {
-            super.onPostExecute(integer);
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-        }
-    }
-
-
+//    endregion
     /////SENSOR SERVICE METHODS///////
-
+//    region
     /**
      * Start sensor service which reads data and sends it back to the database handler
      */
@@ -587,90 +421,23 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
 //        }
     }
 
-    private int accIndex;
-    private int gyroIndex;
+    static long start;
 
-//    private static float[] tmpZarray;
-//    private static float[] tmpXarray;
-//    private static float[] tmpYarray;
-//    private static long[] tmpTimestampArray;
 
     /**
      * Save data to temporary arrays
      */
-
-    static long start;
-
-    static int a = 0;
-
     public void appendSensorDataArray(Message message) {
-        Bundle sensorBundle;
-
-        sensorBundle = message.getData();
-
-        switch (message.arg1) {
-            case SensorService.SENSOR_ACC:
-//                Gyro is often 55 milliseconds behind acc on sony z3
-
-                long time = sensorBundle.getLong(SensorService.SENSOR_TIMESTAMP);
-
-                mAccX.add(sensorBundle.getFloat(SensorService.SENSOR_X));
-                mAccY.add(sensorBundle.getFloat(SensorService.SENSOR_Y));
-                mAccZ.add(sensorBundle.getFloat(SensorService.SENSOR_Z));
-                mAccTimestamp.add(time);
-
-                accIndex++;
-
-                if (accIndex == arraySize) {
-                    new SensorAddingAsyncTask().execute(1, mAccTimestamp.size());
-                    accIndex = 0;
-                }
-                break;
-
-            case SensorService.SENSOR_GYRO:
-//                Uncomment if gyro faster than acc
-//                if (mAccTimestamp.size() == 0) {
-//                    Log.d(TAG, "empty");
-//                    break;
-//                }
-                long timeG = sensorBundle.getLong(SensorService.SENSOR_TIMESTAMP);
-                mGyroX.add(sensorBundle.getFloat(SensorService.SENSOR_X));
-                mGyroY.add(sensorBundle.getFloat(SensorService.SENSOR_Y));
-                mGyroZ.add(sensorBundle.getFloat(SensorService.SENSOR_Z));
-                mGyroTimestamp.add(timeG - mAccTimestamp.get(0)); //current time - start time
-                gyroIndex++;
-
-                if (gyroIndex == arraySize) {
-                    new SensorAddingAsyncTask().execute(2, mGyroTimestamp.size());
-                    gyroIndex = 0;
-                }
-////
-////                    tmpXarray = mGyroXarray;
-////                    tmpYarray = mGyroYarray;
-////                    tmpZarray = mGyroZarray;
-////                    tmpTimestampArray = mGyroTimestampArray;
-//
-//                    mDbHandler.postDelayed(new Runnable() {
-//                        @Override
-//                        public void run() {
-////                            Log.d(TAG, "g" + System.currentTimeMillis());
-////                            long start = System.nanoTime();
-////                                    mDatabaseManager.addSensors(2, mReadingId, tmpXarray, tmpYarray, tmpZarray, tmpTimestampArray);
-//                            mDatabaseManager.addSensors(2, mReadingId, mGyroXarray, mGyroYarray, mGyroZarray, mGyroTimestampArray);
-//                            Log.d(TAG, "" + a);
-////                            Log.d(TAG, ""+ (System.nanoTime()-start));
-//                        }
-//                    }, 30);
-//
-//                    gyroIndex = 0;
-//                }
-                break;
-        }
-
-
+        mDatabaseManager.addData(message);
     }
 
+    private void stopSensorService() {
+        if (mServiceIntent != null) {
+            getActivity().stopService(mServiceIntent);
+        }
+    }
 
+//    endregion
     ////////STOPWATCH INTERFACE CALLS///////
 //    region
     @Override
@@ -695,7 +462,8 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
     public void onTimeZero() {
         startSensorService();
     }
-//    enregion
+//    endregion
+
 
     /**
      * <p>Indicate that reading is finished and set ending time for the reading by getting latest timestamp
@@ -717,16 +485,12 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
                     Log.d(TAG, "set end time");
 
                     long endTime = System.currentTimeMillis();
+//                      sets end time and resets acc and gyro arrays in case of new reading
                     mDatabaseManager.setEndTime(mReading.getId(), endTime);
                     mReading.setEndTime(endTime);
                 }
             }
         });
-//        reset acc and gyro array indexes
-        accIndex = 0;
-        gyroIndex = 0;
-//        Clear arrays from old values
-        resetArrays();
     }
 }
 
