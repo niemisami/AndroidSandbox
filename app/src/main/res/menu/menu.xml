@@ -1,7 +1,8 @@
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
         android:id="@+id/action_history"
-        android:showAsAction="always|withText"
-        android:title="Settings"></item>
+        app:showAsAction="always|withText"
+        android:title="@string/settings"/>
 
 </menu>

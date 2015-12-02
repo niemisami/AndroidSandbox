@@ -1,0 +1,16 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/action_history"
+        android:title="@string/settings"
+        app:showAsAction="never"/>
+    <item
+        android:id="@+id/action_verbose"
+        android:title="@string/verbose_on"
+        app:showAsAction="never"/>
+    <item
+        android:id="@+id/action_export_db"
+        android:title="@string/export_db"
+        app:showAsAction="never"/>
+
+</menu>
