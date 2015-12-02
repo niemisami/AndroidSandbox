@@ -49,6 +49,7 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
 
     private Intent mServiceIntent;
 
+
     private boolean mSensorsRunning = false;
 
     private Button mSaveReadingInfoButton, mStartStopSensorsButton;
@@ -356,6 +357,7 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
         mDbLooper.quit();
     }
 //    endregion
+
     /////SENSOR SERVICE METHODS///////
 //    region
     /**
