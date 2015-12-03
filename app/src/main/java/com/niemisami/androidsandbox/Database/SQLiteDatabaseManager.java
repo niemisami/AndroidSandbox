@@ -90,6 +90,7 @@ public class SQLiteDatabaseManager implements DataManager {
         accIndex = 0;
         gyroIndex = 0;
         resetArrays();
+        setEndTime(mReading.getId(), System.currentTimeMillis());
 
     }
 
@@ -212,7 +213,6 @@ public class SQLiteDatabaseManager implements DataManager {
      * Tell database to set end time
      */
     public boolean setEndTime(long id, long endTime) {
-        stopReading();
         return mHelper.setEndTime(id, endTime);
     }
 
