@@ -80,7 +80,23 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     *            ------------------------------------------------------------------------
     *            | reading_id (_id) | sensor_type | x_val | y_val |  z_val |  timestamp |
     *            ------------------------------------------------------------------------
+    *
+    *
+    *
+    *
+    *
     */
+
+    @Override
+    public void onOpen(SQLiteDatabase db) {
+        super.onOpen(db);
+    }
+
+    @Override
+    public void onConfigure(SQLiteDatabase db) {
+        db.setForeignKeyConstraintsEnabled(true);
+        super.onConfigure(db);
+    }
 
     @Override
     public void onCreate(SQLiteDatabase db) {
@@ -90,7 +106,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 //        Create "Reading information" table
 //        db.execSQL("COMMIT; PRAGMA synchronous=OFF; BEGIN TRANSACTION");
         db.execSQL("CREATE TABLE " + TABLE_READING_INFO + " (" +
-                READING_ID + " INTEGER PRIMARY KEY," +
+                READING_ID + " INTEGER PRIMARY KEY NOT NULL," +
                 PATIENT_NAME + " VARCHAR(50) DEFAULT 'Not provided'," +
                 READING_NOTES + " VARCHAR(100) DEFAULT 'Not provided'," +
                 READING_START_TIME + " INTEGER," +
@@ -107,18 +123,20 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 //                READING_TIMESTAMP + " INTEGER)");
         db.execSQL("CREATE TABLE " + TABLE_SENSOR_ACC + "(" +
 //                Next line sets info tables id to foreign key
-                SENSOR_READING_ID + " INTEGER REFERENCES " + TABLE_READING_INFO + "(" + READING_ID + ") NOT NULL," +
+                SENSOR_READING_ID + " INTEGER," +
                 READING_X + " REAL," +
                 READING_Y + " REAL," +
                 READING_Z + " REAL," +
-                READING_TIMESTAMP + " INTEGER)");
+                READING_TIMESTAMP + " INTEGER," +
+                " FOREIGN KEY("+ SENSOR_READING_ID + ") REFERENCES " + TABLE_READING_INFO + "(" + READING_ID + ") ON DELETE CASCADE)");  // TODO add ON UPDATE CASCADE
         db.execSQL("CREATE TABLE " + TABLE_SENSOR_GYRO + "(" +
 //                Next line sets info tables id to foreign key
-                SENSOR_READING_ID + " INTEGER REFERENCES " + TABLE_READING_INFO + "(" + READING_ID + ") NOT NULL," +
+                SENSOR_READING_ID + " INTEGER," +
                 READING_X + " REAL," +
                 READING_Y + " REAL," +
                 READING_Z + " REAL," +
-                READING_TIMESTAMP + " INTEGER)");
+                READING_TIMESTAMP + " INTEGER," +
+                " FOREIGN KEY("+ SENSOR_READING_ID + ") REFERENCES " + TABLE_READING_INFO + "(" + READING_ID + ") ON DELETE CASCADE)");
         if (verbose) Log.i(TAG, "Databases created in " + (System.nanoTime() - start) + "ns");
 
     }
@@ -359,9 +377,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
 
         //Multiply each result with earlier to make sure that everything worked
-        boolean result = sd.delete(TABLE_SENSOR_ACC, SENSOR_READING_ID + "=?", readingId) > 0;
-        result &= sd.delete(TABLE_SENSOR_GYRO, SENSOR_READING_ID + "=?", readingId) > 0;
-        result &= sd.delete(TABLE_READING_INFO, READING_ID + "=?", readingId) > 0;
+        boolean result = sd.delete(TABLE_READING_INFO, READING_ID + "=?", readingId) > 0;
 
         if (verbose) Log.d(TAG, (System.currentTimeMillis() - start) + " result " + result);
         return result;
