@@ -485,10 +485,9 @@ public class DatabaseFragment extends Fragment implements Stopwatch.StopwatchLis
                     mReading = null;
                 } else {
                     Log.d(TAG, "set end time");
-
                     long endTime = System.currentTimeMillis();
-//                      sets end time and resets acc and gyro arrays in case of new reading
-                    mDatabaseManager.setEndTime(mReading.getId(), endTime);
+//                      Sets end time and resets acc and gyro arrays in case of new reading
+                    mDatabaseManager.stopReading();
                     mReading.setEndTime(endTime);
                 }
             }

@@ -24,6 +24,8 @@ import java.util.List;
  */
 public class DatabaseHelper extends SQLiteOpenHelper {
 
+    ///////VARIABLES/////////
+//    region
     private static final String TAG = "DatabaseHelper";
     private static final String DB_NAME = "readings_sqlite";
     private static final int DB_VERSION = 1;
@@ -54,6 +56,47 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String READING_TIMESTAMP = "timestamp";
 
 
+    private static final String TABLE_CC_RRINT_VALUE = "cc_rrint_value";
+    private static final String TABLE_APD_AO_VALUE = "apd_ao_value";
+    private static final String TABLE_APD_HR_VALUE = "apd_hr_value";
+    private static final String TABLE_ALGORITHM_RESULT = "algorithm_result";
+
+    private static final String APD_AO_ID = "apd_ao_id";
+    private static final String APD_HR_ID = "apd_hr_id";
+    private static final String CC_VALUE_ID = "cc_id";
+    private static final String RESULTS_ID = "algorithm_result_id";
+
+
+    private static final String ALGORITHM_TYPE = "algorithm";
+
+
+    private static final String CC_HR = "cc_hr";
+    private static final String CC_COMBINED_RRINT = "combined_rrint";
+    private static final String CC_ACC_X = "acc_x_rrint";
+    private static final String CC_ACC_Y = "acc_y_rrint";
+    private static final String CC_ACC_Z = "acc_z_rrint";
+    private static final String CC_GYRO_X = "GYRO_x_rrint";
+    private static final String CC_GYRO_Y = "GYRO_y_rrint";
+    private static final String CC_GYRO_Z = "GYRO_z_rrint";
+
+    private static final String APD_AO_PEAK_INDEX = "ao_peak_index";
+    private static final String APD_AO_DIFF = "ao_diff";
+
+    private static final String APD_HR = "apd_hr";
+
+    private static final String RESULT_CC_HR_MEAN = "cc_hr_mean";
+    private static final String RESULT_CC_RRINT_MEAN = "cc_rrint_mean";
+    private static final String RESULT_CC_SD = "cc_sd";
+    private static final String RESULT_APD_HR_MEAN = "apd_hr_mean";
+    private static final String RESULT_APD_HR_SD = "apd_hr_sd";
+    private static final String RESULT_APD_AO_MEAN = "apd_ao_mean";
+    private static final String RESULT_APD_AO_SD = "apd_ao_sd";
+    private static final String RESULT_APD_RMSSD = "apd_rmssd";
+    private static final String RESULT_APD_NN50 = "apd_nn50";
+
+//    endregion
+
+
     public DatabaseHelper(Context context) {
         super(context, DB_NAME, null, DB_VERSION);
     }
@@ -65,22 +108,63 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 //        Drop all tables
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_SENSOR_DATA);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_READING_INFO);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_ALGORITHM_RESULT);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_APD_HR_VALUE);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_APD_AO_VALUE);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_CC_RRINT_VALUE);
 //        Create database again
         onCreate(db);
     }
 
-    /*Database structure:               TABLE: reading_information
+    /*Database structure:
+                                                             TABLE: reading_information
+    *                          -----------------------------------------------------------------------------------------
+    *                          | _id | patient_name | reading_notes |  start_time |  end_time | sensor_count | filename|
+    *                          -----------------------------------------------------------------------------------------
     *
-    *      ----------------------------------------------------------------------------------------
-    *      | _id | patient_name | reading_notes |  start_time |  end_time | sensor_count | filename|
-    *      ----------------------------------------------------------------------------------------
+    *
+    *                                                           TABLE: sensor_data
+    *                                ------------------------------------------------------------------------
+    *                                | reading_id (_id) | sensor_type | x_val | y_val |  z_val |  timestamp |
+    *                                ------------------------------------------------------------------------
     *
     *
-    *                                     TABLE: sensor_data
-    *            ------------------------------------------------------------------------
-    *            | reading_id (_id) | sensor_type | x_val | y_val |  z_val |  timestamp |
-    *            ------------------------------------------------------------------------
+    *                                                        TABLE: cc_rrint_value
+    *---------------------------------------------------------------------------------------------------------------------------------------------
+    *| reading_id (_id) | cc_hr | combined_rrint | acc_x_rrint | acc_y_rrint | acc_z_rrint | gyro_x_rrint | gyro_y_rrint | gyro_z_rrint | timestamp |
+    *---------------------------------------------------------------------------------------------------------------------------------------------
+    *
+    *
+    *                                                          TABLE: apd_ao_value
+    *                              ------------------------------------------------------------------------
+    *                              | reading_id (_id) | sensor_type | algorithm | ao_peak_index | ao_diff |
+    *                              ------------------------------------------------------------------------
+    *
+    *
+    *                                                         TABLE: apd_hr_value
+    *                                      -------------------------------------------------------
+    *                                      | reading_id (_id) | sensor_type | algorithm | apd_hr |
+    *                                      -------------------------------------------------------
+    *
+    *
+    *                                                        TABLE: algorithm_result
+    *--------------------------------------------------------------------------------------------------------------------------------------------------
+    *| reading_id (_id) | algorithm | cc_hr_mean |  cc_rrint_mean |  cc_sd | apd_hr_mean | apd_hr_sd | apd_ao_mean | apd_ao_sd | apd_rmssd | apd_nn50 |
+    *--------------------------------------------------------------------------------------------------------------------------------------------------
+    *
     */
+
+
+    @Override
+    public void onOpen(SQLiteDatabase db) {
+        super.onOpen(db);
+    }
+
+    @Override
+    public void onConfigure(SQLiteDatabase db) {
+        db.setForeignKeyConstraintsEnabled(true);
+        super.onConfigure(db);
+    }
 
     @Override
     public void onCreate(SQLiteDatabase db) {
@@ -90,38 +174,80 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 //        Create "Reading information" table
 //        db.execSQL("COMMIT; PRAGMA synchronous=OFF; BEGIN TRANSACTION");
         db.execSQL("CREATE TABLE " + TABLE_READING_INFO + " (" +
-                READING_ID + " INTEGER PRIMARY KEY," +
+                READING_ID + " INTEGER PRIMARY KEY NOT NULL," +
                 PATIENT_NAME + " VARCHAR(50) DEFAULT 'Not provided'," +
                 READING_NOTES + " VARCHAR(100) DEFAULT 'Not provided'," +
                 READING_START_TIME + " INTEGER," +
                 READING_END_TIME + " INTEGER," +
                 READING_FILE_NAME + " VARCHAR(30))");
-//        Create "sensor data" table
-//        db.execSQL("CREATE TABLE " + TABLE_SENSOR_DATA + "(" +
-////                Next line sets info tables id to foreign key
-//                SENSOR_READING_ID + " INTEGER REFERENCES " + TABLE_READING_INFO + "(" + READING_ID + ")," +
-//                READING_SENSOR_TYPE + " INTEGER," +
-//                READING_X + " REAL," +
-//                READING_Y + " REAL," +
-//                READING_Z + " REAL," +
-//                READING_TIMESTAMP + " INTEGER)");
+
+
+//        Create tables for raw sensor data
         db.execSQL("CREATE TABLE " + TABLE_SENSOR_ACC + "(" +
-//                Next line sets info tables id to foreign key
-                SENSOR_READING_ID + " INTEGER REFERENCES " + TABLE_READING_INFO + "(" + READING_ID + ") NOT NULL," +
+                SENSOR_READING_ID + " INTEGER," +
                 READING_X + " REAL," +
                 READING_Y + " REAL," +
                 READING_Z + " REAL," +
-                READING_TIMESTAMP + " INTEGER)");
+                READING_TIMESTAMP + " INTEGER," +
+//                Next line sets info tables id to foreign key
+                " FOREIGN KEY(" + SENSOR_READING_ID + ") REFERENCES " + TABLE_READING_INFO + "(" + READING_ID + ") ON DELETE CASCADE)");  // TODO add ON UPDATE CASCADE
         db.execSQL("CREATE TABLE " + TABLE_SENSOR_GYRO + "(" +
-//                Next line sets info tables id to foreign key
-                SENSOR_READING_ID + " INTEGER REFERENCES " + TABLE_READING_INFO + "(" + READING_ID + ") NOT NULL," +
+                SENSOR_READING_ID + " INTEGER," +
                 READING_X + " REAL," +
                 READING_Y + " REAL," +
                 READING_Z + " REAL," +
-                READING_TIMESTAMP + " INTEGER)");
+                READING_TIMESTAMP + " INTEGER," +
+//                Next line sets info tables id to foreign key
+                " FOREIGN KEY(" + SENSOR_READING_ID + ") REFERENCES " + TABLE_READING_INFO + "(" + READING_ID + ") ON DELETE CASCADE)");
+
+
+        db.execSQL("CREATE TABLE " + TABLE_CC_RRINT_VALUE + "(" +
+                CC_VALUE_ID + " INTEGER," +
+                CC_HR + " INTEGER," +
+                CC_COMBINED_RRINT + " INTEGER," +
+                CC_ACC_X + " INTEGER," +
+                CC_ACC_Y + " INTEGER," +
+                CC_ACC_Z + " INTEGER," +
+                CC_GYRO_X + " INTEGER," +
+                CC_GYRO_Y + " INTEGER," +
+                CC_GYRO_Z + " INTEGER," +
+                READING_TIMESTAMP + " INTEGER," +
+                " FOREIGN KEY(" + CC_VALUE_ID + ") REFERENCES " + TABLE_READING_INFO + "(" + READING_ID + ") ON DELETE CASCADE)");
+
+        db.execSQL("CREATE TABLE " + TABLE_APD_AO_VALUE + "(" +
+                APD_AO_ID + " INTEGER," +
+                READING_SENSOR_TYPE + " INTEGER," +
+                ALGORITHM_TYPE + " INTEGER, " +
+                APD_AO_PEAK_INDEX + " INTEGER," +
+                APD_AO_DIFF + " INTEGER," +
+                " FOREIGN KEY(" + APD_AO_ID + ") REFERENCES " + TABLE_READING_INFO + "(" + READING_ID + ") ON DELETE CASCADE)");
+
+        db.execSQL("CREATE TABLE " + TABLE_APD_HR_VALUE + "(" +
+                APD_HR_ID + " INTEGER," +
+                READING_SENSOR_TYPE + " INTEGER," +
+                ALGORITHM_TYPE + " INTEGER," +
+                APD_HR + " INTEGER," +
+                " FOREIGN KEY(" + APD_HR_ID + ") REFERENCES " + TABLE_READING_INFO + "(" + READING_ID + ") ON DELETE CASCADE)");
+
+        db.execSQL("CREATE TABLE " + TABLE_ALGORITHM_RESULT + "(" +
+                RESULTS_ID + " INTEGER," +
+                ALGORITHM_TYPE + " INTEGER," +
+                RESULT_CC_HR_MEAN + " INTEGER," +
+                RESULT_CC_RRINT_MEAN + " INTEGER," +
+                RESULT_CC_SD + " REAL," +
+                RESULT_APD_HR_MEAN + " INTEGER," +
+                RESULT_APD_HR_SD + " REAL," +
+                RESULT_APD_AO_MEAN + " INTEGER," +
+                RESULT_APD_AO_SD + " REAL," +
+                RESULT_APD_RMSSD + " REAL," +
+                RESULT_APD_NN50 + " REAL," +
+                " FOREIGN KEY(" + RESULTS_ID + ") REFERENCES " + TABLE_READING_INFO + "(" + READING_ID + ") ON DELETE CASCADE)");
+
+
         if (verbose) Log.i(TAG, "Databases created in " + (System.nanoTime() - start) + "ns");
 
     }
+
 
     @Override
     public synchronized void close() {
@@ -254,7 +380,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
         Log.d(TAG, "save");
         int i = 0;
-        while(t.iterator().hasNext()) {
+        while (t.iterator().hasNext()) {
             stmt.bindLong(1, readingId);
             stmt.bindDouble(2, ((double) x.get(i)));
             stmt.bindDouble(3, ((double) y.get(i)));
@@ -359,9 +485,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
 
         //Multiply each result with earlier to make sure that everything worked
-        boolean result = sd.delete(TABLE_SENSOR_ACC, SENSOR_READING_ID + "=?", readingId) > 0;
-        result &= sd.delete(TABLE_SENSOR_GYRO, SENSOR_READING_ID + "=?", readingId) > 0;
-        result &= sd.delete(TABLE_READING_INFO, READING_ID + "=?", readingId) > 0;
+        boolean result = sd.delete(TABLE_READING_INFO, READING_ID + "=?", readingId) > 0;
 
         if (verbose) Log.d(TAG, (System.currentTimeMillis() - start) + " result " + result);
         return result;
