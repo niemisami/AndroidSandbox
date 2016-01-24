@@ -15,6 +15,8 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.niemisami.androidsandbox.Web.WebActivity;
+
 
 /**
  * A simple {@link Fragment} subclass.
@@ -121,8 +123,10 @@ public class MainFragment extends Fragment {
         mWebButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(getActivity().getApplicationContext(), "Web will be added soon", Toast.LENGTH_SHORT)
-                        .show();
+                Intent i = new Intent(getActivity(), WebActivity.class);
+                startActivity(i);
+//                Toast.makeText(getActivity().getApplicationContext(), "Web will be added soon", Toast.LENGTH_SHORT)
+//                        .show();
             }
         });
 
